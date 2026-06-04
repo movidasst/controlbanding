@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SST | Herramienta Avanzada de Control Banding</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Librerías Externas -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.js"></script>
+
+    <!-- Tailwind Config con la Guía de Estilo -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            teal: '#007b85',
+                            dark: '#00205b',
+                            green: '#70ad47',
+                            yellow: '#ffb600'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html { scroll-behavior: smooth; }
+        body { 
+            -webkit-font-smoothing: antialiased; 
+            background-color: #f8fafc; 
+            color: #475569; 
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* UI EFECTOS */
+        .tech-grid {
+            background-size: 50px 50px;
+            background-image: linear-gradient(to right, rgba(0, 32, 91, 0.02) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 32, 91, 0.02) 1px, transparent 1px);
+        }
+        
+        @keyframes pulse-glow { 0%, 100% { opacity: 0.05; } 50% { opacity: 0.1; } }
+        .animate-pulse-glow { animation: pulse-glow 6s ease-in-out infinite; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+
+        /* GLASSMORPHISM */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+            border-radius: 24px;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .glass-card-interactive { overflow: hidden; cursor: pointer; }
+        .glass-card-interactive::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, #00205b, #007b85, #70ad47);
+            opacity: 0; transition: opacity 0.3s ease; z-index: 10;
+        }
+        .glass-card-interactive:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0, 123, 133, 0.12); }
+        .glass-card-interactive:hover::before { opacity: 1; }
+
+        /* Tabs & Wizard */
+        .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        .tab-content.active { display: block; opacity: 1; animation: slideUp 0.4s ease-out; }
+        
+        .wizard-step { display: none; opacity: 0; }
+        .wizard-step.active { display: block; opacity: 1; animation: slideUp 0.4s ease-out; }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Matrix Styles */
+        .matrix-table th, .matrix-table td { border: 1px solid rgba(226, 232, 240, 0.6); padding: 0.75rem; text-align: center; font-size: 0.875rem;}
+        .matrix-table th { background-color: rgba(248, 250, 252, 0.8); font-weight: 700; color: #00205b; }
+        .matrix-table td { transition: all 0.2s ease; }
+        .matrix-cell-1 { background-color: rgba(112, 173, 71, 0.15); color: #00205b; }
+        .matrix-cell-2 { background-color: rgba(255, 182, 0, 0.15); color: #00205b; }
+        .matrix-cell-3 { background-color: rgba(249, 115, 22, 0.15); color: #00205b; }
+        .matrix-cell-4 { background-color: rgba(239, 68, 68, 0.15); color: #00205b; }
+        .highlight-matrix { position: relative; z-index: 10; box-shadow: 0 0 0 3px #007b85 inset; font-weight: 800; transform: scale(1.05); background-color: #fff !important; }
+
+        /* Form Inputs */
+        .input-field {
+            width: 100%; border-radius: 12px; border: 1px solid #cbd5e1; padding: 0.75rem 1rem;
+            font-size: 0.875rem; transition: all 0.2s; background-color: rgba(248, 250, 252, 0.8);
+            font-family: 'Outfit', sans-serif; font-weight: 400; color: #00205b;
+        }
+        .input-field:focus { outline: none; border-color: #007b85; box-shadow: 0 0 0 3px rgba(0, 123, 133, 0.15); background-color: #ffffff; }
+        .input-field:disabled { background-color: #f1f5f9; cursor: not-allowed; opacity: 0.7; }
+        .input-error { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; }
+
+        /* Autocomplete */
+        .autocomplete-container { position: relative; }
+        .autocomplete-items {
+            position: absolute; border: 1px solid #e5e7eb; border-radius: 12px; z-index: 50;
+            top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); margin-top: 4px;
+        }
+        .autocomplete-items div { padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #f3f4f6; font-size: 0.875rem; color: #00205b; }
+        .autocomplete-items div:hover { background-color: rgba(0, 123, 133, 0.1); color: #007b85; font-weight: 500; }
+
+        /* Toast */
+        .toast {
+            visibility: hidden; min-width: 300px; background-color: #00205b; color: #fff;
+            text-align: center; border-radius: 16px; padding: 1rem; position: fixed;
+            z-index: 100; left: 50%; transform: translateX(-50%) translateY(20px); bottom: 30px;
+            opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 25px -5px rgba(0, 32, 91, 0.4);
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 500;
+        }
+        .toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast-error { background-color: #ef4444; }
+
+        /* Spinner */
+        .loader { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
+        .loader-dark { border-top: 3px solid #007b85; border-color: rgba(0,123,133,0.3); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Semáforo Custom */
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    </style>
+</head>
+<body class="tech-grid relative min-h-screen flex flex-col">
+
+    <!-- Luces Ambientales (Glow Background) -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+        <div class="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-teal blur-[120px] animate-pulse-glow"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-brand-dark blur-[120px] animate-pulse-glow" style="animation-delay: 3s"></div>
+        <div class="absolute top-[40%] right-[10%] w-[30vw] h-[30vw] rounded-full bg-brand-green blur-[120px] opacity-[0.03] animate-pulse-glow" style="animation-delay: 1.5s"></div>
+    </div>
+
+    <!-- UI Elements -->
+    <div id="toast-notification" class="toast">
+        <i data-lucide="info" class="w-5 h-5 text-white" id="toast-icon"></i>
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-card !rounded-none !border-x-0 !border-t-0 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center gap-4">
+                    <img src="https://assets.poap.xyz/cec12a20-fefb-4199-9cc0-b1ece87fe44d.png" alt="Logo La Movida de SST" class="w-14 h-14 object-contain animate-float">
+                    <div>
+                        <h1 class="font-extrabold text-2xl text-brand-dark leading-tight tracking-tight">La Movida de SST</h1>
+                        <p class="text-sm text-brand-teal font-medium tracking-wide">De la Reacción a la prevención</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <button data-target-tab="instrucciones" class="text-sm font-bold text-slate-500 hover:text-brand-teal flex items-center gap-2 transition-colors">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> Guía de Uso
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="top-of-app" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full flex flex-col md:flex-row gap-8">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 flex-shrink-0">
+            <nav id="tab-navigation" class="glass-card flex flex-col space-y-2 p-4 sticky top-28" aria-label="Sidebar">
+                <button class="tab active flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-brand-teal text-white shadow-md shadow-brand-teal/20" data-tab="evaluacion_unificada">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Nueva Evaluación
+                </button>
+                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-dark rounded-xl hover:bg-slate-100/50 hover:text-brand-teal transition-all" data-tab="historial">
+                    <i data-lucide="folder-open" class="w-5 h-5"></i> Mis Evaluaciones
+                </button>
+                
+                <hr class="my-2 border-slate-200/60">
+
+                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-dark rounded-xl hover:bg-slate-100/50 hover:text-brand-teal transition-all" data-tab="compatibilidad">
+                    <i data-lucide="package-search" class="w-5 h-5"></i> Compatibilidad
+                </button>
+                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-dark rounded-xl hover:bg-slate-100/50 hover:text-brand-teal transition-all" data-tab="sustitucion">
+                    <i data-lucide="replace" class="w-5 h-5"></i> Sustitución
+                </button>
+                
+                <hr class="my-2 border-slate-200/60">
+                
+                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all" data-tab="instrucciones">
+                    <i data-lucide="book-open" class="w-5 h-5"></i> Guía y Manual
+                </button>
+                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all" data-tab="verificar">
+                    <i data-lucide="file-badge" class="w-5 h-5"></i> Verificar Reporte
+                </button>
+                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all" data-tab="fundamento">
+                    <i data-lucide="microscope" class="w-5 h-5"></i> Fundamentos
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="glass-card flex-grow p-6 md:p-10 min-h-[600px]">
+            
+            <!-- Tab Content: Unified Risk Assessment -->
+            <div id="evaluacion_unificada" class="tab-content active">
+                <div class="mb-8 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-brand-dark">Evaluación Integral de Riesgos</h2>
+                        <p class="text-slate-500 mt-2 font-medium">Análisis simultáneo de peligrosidad Inhalatoria (COSHH) y Dérmica (RISKOFDERM).</p>
+                    </div>
+                </div>
+                
+                <!-- Wizard Progress -->
+                <div class="mb-10 relative">
+                    <div class="overflow-hidden h-3 mb-4 text-xs flex rounded-full bg-slate-200/50">
+                        <div id="progressBar" style="width: 20%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-brand-teal transition-all duration-500"></div>
+                    </div>
+                    <div class="flex justify-between text-[11px] sm:text-xs font-bold text-slate-400">
+                        <span id="step-label-1" class="text-brand-teal">1. Contexto</span>
+                        <span id="step-label-2">2. Identificación</span>
+                        <span id="step-label-3">3. Vía Inhalatoria</span>
+                        <span id="step-label-4">4. Vía Dérmica</span>
+                        <span id="step-label-5">5. Controles</span>
+                    </div>
+                </div>
+
+                <form id="unifiedBandingForm">
+                    <!-- Step 1: Context Data -->
+                    <div id="step-1" class="wizard-step active">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label class="block text-sm font-bold text-brand-dark mb-2">Empresa</label><input type="text" name="companyName" class="input-field" placeholder="Nombre de la empresa" required></div>
+                            <div><label class="block text-sm font-bold text-brand-dark mb-2">Evaluador</label><input type="text" id="evaluatorName" name="evaluatorName" class="input-field" placeholder="Su nombre" required></div>
+                            <div><label class="block text-sm font-bold text-brand-dark mb-2">Ubicación/Área</label><input type="text" name="location" class="input-field" placeholder="Ej. Taller principal" required></div>
+                            <div><label class="block text-sm font-bold text-brand-dark mb-2">Proceso de Trabajo</label><input type="text" id="process" name="process" class="input-field" placeholder="Ej. Pintura con pistola" required></div>
+                            <div><label class="block text-sm font-bold text-brand-dark mb-2">Fecha</label><input type="date" id="evalDate" name="evalDate" class="input-field" required></div>
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">País</label>
+                                <select name="country" class="input-field">
+                                    <option>Chile</option><option>Argentina</option><option>Colombia</option><option>México</option><option>España</option><option>Perú</option><option>Otro</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-10 flex justify-end">
+                            <button type="button" data-wizard-action="next" class="flex items-center gap-2 bg-brand-teal hover:bg-brand-dark text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-lg shadow-brand-teal/20">
+                                Siguiente <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Hazard Identification (Substance vs Mixture) -->
+                    <div id="step-2" class="wizard-step">
+                        <div class="flex flex-col sm:flex-row gap-4 mb-8 bg-slate-100/50 p-2 rounded-xl w-fit mx-auto border border-slate-200">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="product_type" value="pura" class="peer hidden" checked>
+                                <div class="px-6 py-3 rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-brand-teal peer-checked:shadow-sm transition-all flex items-center justify-center gap-2 text-center">
+                                    <i data-lucide="flask-round" class="w-4 h-4"></i> Sustancia Pura
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="product_type" value="mezcla" class="peer hidden">
+                                <div class="px-6 py-3 rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-brand-dark peer-checked:shadow-sm transition-all flex items-center justify-center gap-2 text-center">
+                                    <i data-lucide="beaker" class="w-4 h-4"></i> Mezcla Compleja
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Mode: Sustancia Pura -->
+                        <div id="mode-pura" class="space-y-8 animate-slideUp">
+                            <div class="glass-card !border-brand-teal/30 p-5 rounded-2xl flex gap-4 text-brand-dark text-sm items-start">
+                                <i data-lucide="info" class="w-6 h-6 flex-shrink-0 text-brand-teal mt-0.5"></i>
+                                <p class="font-medium leading-relaxed">Introduzca el <b>Nº CAS</b> para autocompletar peligros. Si PubChem falla o no lo tiene, introduzca las frases manualmente desde su FDS.</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Nº CAS</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+                                        </div>
+                                        <input type="text" id="cas_number" name="cas_number" class="input-field pl-12" placeholder="Ej: 108-88-3 (Tolueno)">
+                                    </div>
+                                    <div id="cas_number-info-display" class="mt-3 min-h-[24px]"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Nombre Sustancia</label>
+                                    <input type="text" id="chemical_name_pura" name="chemical_name_pura" class="input-field" placeholder="Ej: Tolueno">
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white/50 p-6 rounded-2xl border border-slate-200/60">
+                                <label class="block text-sm font-bold text-brand-dark mb-2">Frases H Totales (Inhalatorias y Dérmicas) <span class="text-red-500">*</span></label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="h_phrases" name="h_phrases" class="input-field" placeholder="Ej: H225, H315, H336" required>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-2">Separe con comas. El sistema extraerá automáticamente cuáles aplican a los pulmones y cuáles a la piel.</p>
+                            </div>
+                        </div>
+
+                        <!-- Mode: Mezcla -->
+                        <div id="mode-mezcla" class="hidden space-y-6 animate-slideUp">
+                            <div class="glass-card !border-brand-dark/30 p-5 rounded-2xl flex gap-4 text-brand-dark text-sm items-start">
+                                <i data-lucide="settings" class="w-6 h-6 flex-shrink-0 text-brand-dark mt-0.5"></i>
+                                <p class="font-medium leading-relaxed">Agregue los componentes peligrosos indicados en la Sección 3 de la FDS y su concentración. El sistema deducirá la banda inhalatoria y la severidad dérmica basándose en los umbrales GHS.</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">Nombre Comercial de la Mezcla <span class="text-red-500">*</span></label>
+                                <input type="text" id="chemical_name_mezcla" name="chemical_name_mezcla" class="input-field" placeholder="Ej: Diluyente Sintético Extra">
+                            </div>
+
+                            <div class="border border-slate-200/80 rounded-2xl overflow-hidden bg-white/40 shadow-sm p-6">
+                                <h4 class="font-extrabold text-brand-dark mb-4 flex items-center gap-2"><i data-lucide="list" class="w-5 h-5 text-brand-teal"></i> Componentes</h4>
+                                <div id="mixture-components" class="space-y-3">
+                                    <!-- Dynamic inputs will appear here -->
+                                </div>
+                                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-slate-100 mt-4">
+                                    <button type="button" id="add-component-btn" class="w-full sm:w-auto text-sm font-bold text-brand-teal bg-brand-teal/10 px-5 py-2.5 rounded-xl hover:bg-brand-teal/20 flex items-center justify-center gap-2 transition-colors">
+                                        <i data-lucide="plus" class="w-4 h-4"></i> Añadir Componente
+                                    </button>
+                                    <button type="button" id="calculate-mixture-btn" class="w-full sm:w-auto text-sm font-bold text-white bg-brand-dark px-6 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                                        Calcular Clasificación Global
+                                    </button>
+                                </div>
+                                <div id="mixture-result" class="bg-slate-100 p-4 rounded-xl mt-6 hidden border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                                    <div class="text-center md:text-left">
+                                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Banda Inhalatoria Asignada</p>
+                                        <p id="mix-res-inh" class="text-2xl font-black text-brand-teal">-</p>
+                                    </div>
+                                    <div class="text-center md:text-left">
+                                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Severidad Dérmica Asignada</p>
+                                        <p id="mix-res-der" class="text-2xl font-black text-brand-dark">-</p>
+                                    </div>
+                                    <i data-lucide="check-circle-2" class="w-8 h-8 text-brand-green hidden md:block"></i>
+                                </div>
+                                <!-- Hidden inputs to store mix results -->
+                                <input type="hidden" id="mix_banda_inh" name="mix_banda_inh">
+                                <input type="hidden" id="mix_score_der" name="mix_score_der">
+                            </div>
+                        </div>
+
+                        <!-- Common Modifiers -->
+                        <div class="mt-8 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <label class="flex items-center gap-4 cursor-pointer group">
+                                <div class="relative flex items-center justify-center">
+                                    <input type="checkbox" id="is_cmr" name="is_cmr" class="peer appearance-none w-6 h-6 border-2 border-slate-300 rounded-lg checked:bg-brand-teal checked:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/30 transition-all">
+                                    <i data-lucide="check" class="absolute w-4 h-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></i>
+                                </div>
+                                <span class="text-sm font-medium text-slate-600 group-hover:text-brand-dark transition-colors">Contiene sustancias CMR o Nanomateriales (Forzará Riesgo Extremo)</span>
+                            </label>
+                        </div>
+
+                        <div class="mt-10 flex justify-between">
+                            <button type="button" data-wizard-action="prev" class="flex items-center gap-2 text-slate-500 hover:text-brand-dark px-4 py-2 font-bold transition-colors">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i> Anterior
+                            </button>
+                            <button type="button" data-wizard-action="next" id="btn-next-step2" class="flex items-center gap-2 bg-brand-teal hover:bg-brand-dark text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-lg shadow-brand-teal/20">
+                                Siguiente <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Inhalation Exposure Potential -->
+                    <div id="step-3" class="wizard-step">
+                        <div class="mb-6"><h3 class="text-xl font-extrabold text-brand-dark">Generación Inhalatoria</h3></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Estado Físico a Temp. Ambiente</label>
+                                    <select id="estado_fisico" name="estado_fisico" class="input-field">
+                                        <option value="solido">Sólido / Polvo</option>
+                                        <option value="liquido" selected>Líquido</option>
+                                        <option value="gas">Gas</option>
+                                    </select>
+                                </div>
+                                <div id="propiedad_solido" class="hidden">
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Pulverulencia (Sólidos)</label>
+                                    <select name="pulverulencia" class="input-field">
+                                        <option value="baja">Baja (Pellets, escamas)</option>
+                                        <option value="media">Media (Polvo cristalino)</option>
+                                        <option value="alta">Alta (Polvo fino, cemento)</option>
+                                    </select>
+                                </div>
+                                <div id="propiedad_liquido">
+                                    <label class="flex items-center gap-2 text-sm font-bold text-brand-dark mb-2">
+                                        Volatilidad <i data-lucide="help-circle" class="w-4 h-4 text-brand-yellow" title="Depende del Punto de Ebullición (PE)"></i>
+                                    </label>
+                                    <select name="volatilidad" class="input-field">
+                                        <option value="baja">Baja (P.E. > 150°C)</option>
+                                        <option value="media" selected>Media (P.E. 50-150°C)</option>
+                                        <option value="alta">Alta (P.E. < 50°C)</option>
+                                    </select>
+                                </div>
+                                <div id="propiedad_gas" class="hidden">
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Emisión de Gas</label>
+                                    <select name="emision_gas" class="input-field">
+                                        <option value="baja">Sistema cerrado a baja presión</option>
+                                        <option value="media">Manipulación en sistema abierto</option>
+                                        <option value="alta">Fugas a alta presión</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Cantidad Utilizada por Tarea</label>
+                                    <select name="cantidad_utilizada" class="input-field">
+                                        <option value="pequena">Pequeña (Gramos o mililitros)</option>
+                                        <option value="mediana" selected>Mediana (Kilogramos o litros)</option>
+                                        <option value="grande">Grande (Toneladas o m³)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Dinámica del Proceso</label>
+                                    <select name="tipo_proceso" class="input-field">
+                                        <option value="0">Sistema totalmente cerrado</option>
+                                        <option value="1">Transferencia suave / Vertido lento</option>
+                                        <option value="2">Mezcla o agitación en recipientes abiertos</option>
+                                        <option value="3">Aplicación por brocha, rodillo o inmersión</option>
+                                        <option value="4">Vaciado brusco de sacos, tamizado</option>
+                                        <option value="5">Pulverización (spray), limpieza a presión, corte</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-brand-dark mb-2">Duración de la Tarea Diaria</label>
+                                    <select name="duracion" class="input-field">
+                                        <option value="0.2">&lt; 15 minutos</option>
+                                        <option value="0.5">15 - 60 minutos</option>
+                                        <option value="1" selected>1 - 4 horas</option>
+                                        <option value="2">&gt; 4 horas</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expert Mode -->
+                        <div class="mt-8 pt-4 border-t border-slate-200/60">
+                            <button type="button" id="toggle-expert-mode" class="text-sm font-bold text-brand-teal flex items-center gap-2 hover:text-brand-dark transition-colors">
+                                <i data-lucide="sliders-horizontal" class="w-5 h-5"></i> Ajustes de Entorno Físico (Opcional)
+                            </button>
+                            <div id="expert-mode-fields" class="hidden mt-4 p-5 bg-slate-50 border border-slate-200/80 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-dark mb-2 uppercase">Volumen del Área</label>
+                                    <select id="workplace_volume" name="workplace_volume" class="input-field text-sm !py-2">
+                                        <option value="1.0">Base (Taller normal)</option>
+                                        <option value="1.5">Pequeño (&lt;100 m³, confinado)</option>
+                                        <option value="0.5">Grande (&gt;1000 m³, nave)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-dark mb-2 uppercase">Ventilación de Nave</label>
+                                    <select id="ventilation_type" name="ventilation_type" class="input-field text-sm !py-2">
+                                        <option value="1.0">No especificada</option>
+                                        <option value="1.2">Natural Deficiente (Sótano)</option>
+                                        <option value="0.8">Mecánica General Operativa</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-dark mb-2 uppercase">Energía Térmica</label>
+                                    <select id="process_energy" name="process_energy" class="input-field text-sm !py-2">
+                                        <option value="1.0">Temperatura Ambiente</option>
+                                        <option value="1.5">Proceso en Caliente (Hierve/Funde)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-10 flex justify-between">
+                            <button type="button" data-wizard-action="prev" class="flex items-center gap-2 text-slate-500 hover:text-brand-dark px-4 py-2 font-bold transition-colors">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i> Anterior
+                            </button>
+                            <button type="button" data-wizard-action="next" class="flex items-center gap-2 bg-brand-teal hover:bg-brand-dark text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-lg shadow-brand-teal/20">
+                                Siguiente <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Dermal Exposure Potential (RISKOFDERM) -->
+                    <div id="step-4" class="wizard-step">
+                        <div class="mb-6">
+                            <h3 class="text-xl font-extrabold text-brand-dark mb-2">Exposición Dérmica (Modelo RISKOFDERM)</h3>
+                            <p class="text-sm text-slate-500">Seleccione la Unidad DEO (Dermal Exposure Operation) que mejor describa la interacción física del trabajador con el producto.</p>
+                        </div>
+
+                        <div class="bg-white/60 p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-3xl mx-auto">
+                            <label class="block text-sm font-bold text-brand-dark mb-4">Categoría de Tarea Estandarizada</label>
+                            <select name="dermal_task" class="input-field !text-base !py-4" size="6" style="height: auto;">
+                                <optgroup label="Manipulación Directa">
+                                    <option value="contam_solids">Manejo de objetos contaminados con polvo/sólidos</option>
+                                    <option value="contam_liquids">Manejo de objetos húmedos/contaminados con líquidos</option>
+                                </optgroup>
+                                <optgroup label="Dispersión y Aplicación">
+                                    <option value="disperse_solids">Dispersión manual de sólidos (ej. amasar con manos)</option>
+                                    <option value="disperse_liquids">Dispersión manual de líquidos (ej. frotar trapos)</option>
+                                    <option value="tool_solids">Aplicación de sólidos con herramienta (ej. espátula)</option>
+                                    <option value="tool_liquids" selected>Aplicación de líquidos con herramienta (ej. brocha)</option>
+                                    <option value="spray_liquids">Pulverización aerografiada de líquidos (spray)</option>
+                                </optgroup>
+                                <optgroup label="Inmersión y Mecánica">
+                                    <option value="immersion_liquids">Inmersión de piezas/manos en baños líquidos</option>
+                                    <option value="mech_liquids">Tratamiento mecánico fluido (ej. fluidos de corte)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div class="mt-10 flex justify-between">
+                            <button type="button" data-wizard-action="prev" class="flex items-center gap-2 text-slate-500 hover:text-brand-dark px-4 py-2 font-bold transition-colors">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i> Anterior
+                            </button>
+                            <button type="button" data-wizard-action="next" class="flex items-center gap-2 bg-brand-teal hover:bg-brand-dark text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-lg shadow-brand-teal/20">
+                                Siguiente <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Final Evaluation & Existing Controls -->
+                    <div id="step-5" class="wizard-step">
+                        <div class="max-w-2xl mx-auto text-center py-8">
+                            <div class="bg-brand-dark/5 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 text-brand-dark">
+                                <i data-lucide="shield-alert" class="w-12 h-12"></i>
+                            </div>
+                            <h3 class="text-2xl font-extrabold text-brand-dark mb-3">Definición de Controles Actuales</h3>
+                            <p class="text-slate-500 mb-8 font-medium">Para determinar el Riesgo Residual con exactitud, indique qué tecnología de control principal está implementada <b>actualmente</b> en el puesto de trabajo.</p>
+                            
+                            <div class="text-left bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+                                <label class="block text-sm font-bold text-brand-dark mb-3">Nivel Tecnológico Implementado</label>
+                                <select name="controles_existentes" class="input-field !text-base !py-3">
+                                    <option value="0">0 - Ninguno. Ventilación natural pobre, sin protección colectiva.</option>
+                                    <option value="1" selected>1 - Ventilación General Mecánica operativa y buenas prácticas.</option>
+                                    <option value="2">2 - Extracción Localizada (VEL) operativa cerca del foco.</option>
+                                    <option value="3">3 - Confinamiento parcial (Cabina) o sistema cerrado.</option>
+                                    <option value="4">4 - Aislamiento estricto bajo diseño experto de ingeniería.</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mt-10 flex justify-between items-center border-t border-slate-200/60 pt-8">
+                            <button type="button" data-wizard-action="prev" class="flex items-center gap-2 text-slate-500 hover:text-brand-dark px-4 py-2 font-bold transition-colors">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i> Anterior
+                            </button>
+                            <button type="submit" id="submit-eval-btn" class="flex items-center gap-3 bg-brand-dark hover:bg-[#001030] text-white px-10 py-4 rounded-2xl font-extrabold shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+                                <i data-lucide="calculator" class="w-6 h-6"></i> Procesar Evaluación Global
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Unified Dashboard (Hidden until calculated) -->
+                <div id="resultadoEvaluacion" class="mt-14 hidden opacity-0 transition-opacity duration-500">
+                    <div id="report-container" class="bg-slate-50 border border-slate-200 p-6 md:p-8 rounded-[32px] shadow-sm">
+                        
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4 border-b border-slate-200 pb-6">
+                            <div>
+                                <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-dark/10 text-brand-dark rounded-full text-xs font-bold uppercase tracking-widest mb-3">
+                                    <i data-lucide="activity" class="w-4 h-4"></i> Diagnóstico Completado
+                                </div>
+                                <h2 class="text-3xl font-extrabold text-brand-dark" id="res-chemical-name">Nombre Químico</h2>
+                                <p class="text-slate-500 mt-1 font-medium"><span id="res-eval-info">Proceso | Fecha</span></p>
+                            </div>
+                            <div class="flex flex-wrap gap-3 print:hidden">
+                                <button id="save-history-btn" class="px-5 py-2.5 text-sm font-bold text-brand-teal bg-brand-teal/10 rounded-xl hover:bg-brand-teal/20 transition-colors flex items-center gap-2">
+                                    <i data-lucide="save" class="w-4 h-4"></i> Guardar
+                                </button>
+                                <button id="pdf-unified-btn" class="px-5 py-2.5 text-sm font-bold text-white bg-brand-dark rounded-xl hover:bg-[#001030] transition-colors shadow-md flex items-center gap-2">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i> Reporte PDF
+                                </button>
+                                <button id="reset-eval-btn" class="px-4 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Dual KPI Section -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                            
+                            <!-- Panel Inhalatorio -->
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/80 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 p-4 opacity-10 text-brand-teal"><i data-lucide="lungs" class="w-24 h-24"></i></div>
+                                <h3 class="text-lg font-extrabold text-brand-dark mb-6 flex items-center gap-2"><i data-lucide="wind" class="w-5 h-5 text-brand-teal"></i> Vía Inhalatoria (COSHH)</h3>
+                                
+                                <div class="grid grid-cols-2 gap-4 mb-6">
+                                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Peligro Base</p>
+                                        <p class="text-3xl font-black text-brand-dark">Banda <span id="res-inh-band">A</span></p>
+                                    </div>
+                                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Exposición</p>
+                                        <p class="text-3xl font-black text-brand-dark">Nivel <span id="res-inh-exp">1</span></p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between bg-brand-dark/5 p-5 rounded-2xl border border-brand-dark/10">
+                                    <div>
+                                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Control Requerido</p>
+                                        <p class="text-4xl font-black text-brand-teal" id="res-inh-req">1</p>
+                                    </div>
+                                    <div class="text-right flex flex-col items-end">
+                                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Riesgo Residual</p>
+                                        <span id="res-inh-resid" class="status-badge bg-green-100 text-green-700">Controlado</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel Dérmico -->
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/80 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 p-4 opacity-10 text-brand-yellow"><i data-lucide="hand" class="w-24 h-24"></i></div>
+                                <h3 class="text-lg font-extrabold text-brand-dark mb-6 flex items-center gap-2"><i data-lucide="hand" class="w-5 h-5 text-brand-yellow"></i> Vía Dérmica (RISKOFDERM)</h3>
+                                
+                                <div class="grid grid-cols-2 gap-4 mb-6">
+                                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Peligrosidad (ITL)</p>
+                                        <p class="text-xl font-black text-brand-dark break-words leading-tight" id="res-der-haz">Bajo</p>
+                                    </div>
+                                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Exposición Tarea</p>
+                                        <p class="text-xl font-black text-brand-dark break-words leading-tight" id="res-der-exp">Baja</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between bg-brand-yellow/10 p-5 rounded-2xl border border-brand-yellow/20">
+                                    <div>
+                                        <p class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Nivel de Riesgo</p>
+                                        <p class="text-4xl font-black text-brand-yellow" id="res-der-score">1</p>
+                                    </div>
+                                    <div class="text-right flex flex-col items-end">
+                                        <p class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">Criticidad</p>
+                                        <span id="res-der-crit" class="status-badge bg-green-100 text-green-700">Aceptable</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Action Plans -->
+                        <h3 class="text-xl font-extrabold text-brand-dark mb-4 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-6 h-6 text-brand-teal"></i> Plan de Acción Consolidado</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div id="plan-inhalatorio" class="bg-white p-6 rounded-2xl border-l-4 border-l-brand-teal shadow-sm">
+                                <!-- Injected -->
+                            </div>
+                            <div id="plan-dermico" class="bg-white p-6 rounded-2xl border-l-4 border-l-brand-yellow shadow-sm">
+                                <!-- Injected -->
+                            </div>
+                        </div>
+
+                        <!-- Matrices Expandibles -->
+                        <details class="mt-8 group bg-white border border-slate-200 rounded-2xl overflow-hidden print:hidden">
+                            <summary class="flex justify-between items-center font-bold cursor-pointer list-none p-5 text-brand-dark hover:bg-slate-50 transition-colors">
+                                <span>Ver Matrices de Referencia Matemáticas</span>
+                                <span class="transition group-open:rotate-180"><i data-lucide="chevron-down" class="w-5 h-5"></i></span>
+                            </summary>
+                            <div class="text-neutral-600 p-5 border-t border-slate-200 bg-slate-50 flex flex-col md:flex-row gap-8">
+                                <div class="flex-1">
+                                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest text-center mb-3">Cruce Inhalatorio</p>
+                                    <table id="riskMatrix-unified" class="w-full matrix-table bg-white"></table>
+                                </div>
+                                <div class="flex-1">
+                                     <p class="text-xs font-bold text-slate-500 uppercase tracking-widest text-center mb-3">Cruce Dérmico (1-10)</p>
+                                     <table class="w-full matrix-table bg-white">
+                                        <thead><tr><th>Peligro \ Exp</th><th>Baja</th><th>Media</th><th>Alta</th><th>Extr.</th></tr></thead>
+                                        <tbody>
+                                            <tr><th>Bajo</th><td>1</td><td>2</td><td>3</td><td>6</td></tr>
+                                            <tr><th>Moderado</th><td>2</td><td>3</td><td>6</td><td>8</td></tr>
+                                            <tr><th>Alto</th><td>5</td><td>6</td><td>8</td><td>9</td></tr>
+                                            <tr><th>Muy Alto</th><td>6</td><td>8</td><td>9</td><td>10</td></tr>
+                                            <tr><th>Extremo</th><td>8</td><td>9</td><td>10</td><td>10</td></tr>
+                                        </tbody>
+                                     </table>
+                                </div>
+                            </div>
+                        </details>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Mis Evaluaciones (Historial) -->
+            <div id="historial" class="tab-content">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-extrabold text-brand-dark">Mis Evaluaciones</h2>
+                    <p class="text-slate-500 mt-2 font-medium">Gestione localmente las evaluaciones previas. Los datos se almacenan de forma segura en su navegador.</p>
+                </div>
+                
+                <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="uppercase tracking-wider border-b border-slate-200 bg-slate-50 text-slate-500 text-xs font-bold">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4">Fecha</th>
+                                    <th scope="col" class="px-6 py-4">Químico/Mezcla</th>
+                                    <th scope="col" class="px-6 py-4">Proceso</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Inhalatorio</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Dérmico</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-slate-100 font-medium text-brand-dark">
+                                <!-- Filas inyectadas por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="history-empty" class="p-12 text-center hidden">
+                        <i data-lucide="folder-open" class="w-16 h-16 text-slate-300 mx-auto mb-4"></i>
+                        <h3 class="text-lg font-bold text-slate-500">No hay evaluaciones guardadas.</h3>
+                        <p class="text-sm text-slate-400 mt-1">Realice una "Nueva Evaluación" y haga clic en Guardar para que aparezca aquí.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Sustitución Avanzada -->
+            <div id="sustitucion" class="tab-content">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-extrabold text-brand-dark">Sustitución Multi-Criterio</h2>
+                    <p class="text-slate-500 mt-2 font-medium">Verifique si un químico alternativo reduce el riesgo global (Inhalatorio + Dérmico) comparado con el químico base.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <!-- Current Product -->
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4">Línea Base (Producto Actual)</h3>
+                        <div id="current-product-info" class="glass-card p-8 h-full min-h-[250px] flex flex-col justify-center text-center">
+                            <i data-lucide="flask-conical" class="w-10 h-10 text-slate-300 mx-auto mb-4"></i>
+                            <p class="text-slate-500 font-medium">Realice una Nueva Evaluación y cárguela en el sistema para usarla como base.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Alternative Product -->
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4">Posible Sustituto</h3>
+                        <div class="glass-card glass-card-interactive p-8 border-l-4 border-l-brand-teal space-y-6 min-h-[250px]">
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">Nº CAS del Sustituto</label>
+                                <input type="text" id="sub-cas-number" class="input-field" placeholder="Buscar autocompletado...">
+                                <div id="sub-cas-number-info-display" class="mt-3"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">Frases H Totales (Obligatorio)</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="sub-h_phrases" class="input-field" placeholder="Ej: H315, H336">
+                                </div>
+                            </div>
+                            <button id="compare-btn" class="w-full mt-4 bg-brand-teal hover:bg-brand-dark text-white font-extrabold py-3.5 rounded-xl transition-colors shadow-lg shadow-brand-teal/20 flex items-center justify-center gap-2">
+                                <i data-lucide="scale" class="w-5 h-5"></i> Ejecutar Análisis Comparativo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="comparison-result" class="mt-12 hidden opacity-0 transition-opacity duration-500"></div>
+            </div>
+
+            <!-- Tab Content: Compatibilidad -->
+            <div id="compatibilidad" class="tab-content">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-extrabold text-brand-dark">Compatibilidad de Almacenamiento</h2>
+                    <p class="text-slate-500 mt-2 font-medium">Determine si dos productos químicos pueden almacenarse juntos basándose en sus frases H o clasificación SGA.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Producto A -->
+                    <div class="glass-card glass-card-interactive p-8">
+                        <div class="absolute top-0 right-0 bg-brand-teal text-white text-xs font-bold px-4 py-1.5 rounded-bl-xl rounded-tr-[24px]">Prod A</div>
+                        <h3 class="text-xl font-extrabold text-brand-dark mb-6">Producto A</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">Nº CAS</label>
+                                <input type="text" id="chem1_cas" class="input-field" placeholder="Ej: 67-64-1">
+                                <div id="chem1_cas-info-display" class="mt-2 min-h-[24px]"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">O Frases H</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="chem1_h" class="input-field" placeholder="Ej: H225">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Producto B -->
+                    <div class="glass-card glass-card-interactive p-8">
+                         <div class="absolute top-0 right-0 bg-brand-dark text-white text-xs font-bold px-4 py-1.5 rounded-bl-xl rounded-tr-[24px]">Prod B</div>
+                        <h3 class="text-xl font-extrabold text-brand-dark mb-6">Producto B</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">Nº CAS</label>
+                                <input type="text" id="chem2_cas" class="input-field" placeholder="Ej: 7697-37-2">
+                                <div id="chem2_cas-info-display" class="mt-2 min-h-[24px]"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-brand-dark mb-2">O Frases H</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="chem2_h" class="input-field" placeholder="Ej: H272, H314">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-10 flex justify-center">
+                    <button id="check-compatibility-btn" class="flex items-center gap-3 bg-brand-dark hover:bg-[#001030] text-white px-10 py-4 rounded-2xl font-extrabold shadow-xl hover:-translate-y-1 transition-all">
+                        <i data-lucide="git-compare-arrows" class="w-6 h-6"></i> Analizar Compatibilidad
+                    </button>
+                </div>
+                
+                <div id="compatibility-result" class="mt-12 hidden opacity-0 transition-opacity duration-500"></div>
+            </div>
+
+            <!-- Tab Content: Instrucciones -->
+            <div id="instrucciones" class="tab-content">
+                <div class="glass-card p-10 prose prose-slate max-w-none prose-headings:text-brand-dark prose-a:text-brand-teal">
+                    <h2 class="text-3xl font-extrabold flex items-center gap-3"><i data-lucide="book-open" class="w-8 h-8 text-brand-teal"></i> Guía de Uso Rápido</h2>
+                    <p class="text-lg font-medium text-slate-600">Bienvenido al ecosistema unificado. Ahora evaluar un proceso toma la mitad del tiempo.</p>
+                    
+                    <h3 class="text-xl font-bold mt-8">El Flujo Único (Nueva Evaluación)</h3>
+                    <ol class="space-y-3 mt-4">
+                        <li><strong>Identifique el químico (Paso 2):</strong> Seleccione si es "Pura" o "Mezcla". Al ingresar el CAS o usar la calculadora de mezclas, el sistema destila las frases H para separar los riesgos inhalatorios de los dérmicos matemáticamente.</li>
+                        <li><strong>Parámetros Físicos (Paso 3 y 4):</strong> Responda sobre cómo se comporta la sustancia en el aire (volatilidad/polvo) y cómo contacta con el trabajador (tarea DEO).</li>
+                        <li><strong>Dashboard Final:</strong> Obtendrá un panel de control con el cruce de ambos modelos (COSHH + RISKOFDERM) y un PDF listo para imprimir. Guarde la evaluación para que quede en su "Historial".</li>
+                    </ol>
+                    
+                    <div class="bg-brand-yellow/10 border-l-4 border-brand-yellow p-4 rounded-r-xl mt-6">
+                        <p class="font-bold text-brand-dark m-0">Sobre las Mezclas:</p>
+                        <p class="text-sm mt-1 mb-0">La calculadora utiliza las lógicas de corte del SGA. Por ejemplo, si un componente es corrosivo (H314) y está en la mezcla a >5%, la mezcla asume el nivel Muy Alto dérmico.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Verificar -->
+            <div id="verificar" class="tab-content">
+                 <div class="max-w-2xl mx-auto text-center py-16">
+                    <div class="bg-brand-dark/5 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-8 text-brand-dark">
+                        <i data-lucide="file-check-2" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Verificar Autenticidad de Informe</h2>
+                    <p class="text-slate-500 mb-10 font-medium text-lg leading-relaxed">Introduzca el código único del PDF (Ej: CB-172470218) para validar que se generó en esta máquina sin alteraciones.</p>
+                    
+                    <div class="flex max-w-lg mx-auto shadow-xl rounded-2xl overflow-hidden border border-slate-200 focus-within:ring-4 focus-within:ring-brand-teal/30 focus-within:border-brand-teal transition-all">
+                        <input type="text" id="report-code-input" class="flex-1 border-0 bg-white/90 px-6 py-4 text-lg font-medium text-brand-dark focus:outline-none" placeholder="CB-...">
+                        <button id="verify-report-btn" class="bg-brand-dark hover:bg-brand-teal text-white px-8 py-4 font-extrabold transition-colors">Verificar</button>
+                    </div>
+                    <div id="verification-result" class="mt-12"></div>
+                 </div>
+            </div>
+
+            <!-- Tab Content: Fundamentos -->
+            <div id="fundamento" class="tab-content">
+                <div class="glass-card p-10 prose prose-slate max-w-none prose-headings:text-brand-dark">
+                    <h2 class="text-3xl font-extrabold">Fundamentos Científicos</h2>
+                    <p class="text-lg font-medium text-slate-600">Este SaaS cruza las metodologías cualitativas más robustas para pymes.</p>
+                    
+                    <h3 class="text-2xl font-bold mt-8">Inhalatorio: COSHH Essentials (UK) Modificado</h3>
+                    <p>Agrupa el riesgo tóxico en 5 bandas (A-E) vía Frases H. Modula la exposición cruzando propiedades termodinámicas (Punto de Ebullición) o mecánicas (Polvo) frente a la escala de la operación (g, Kg, Ton). Hemos agregado modificadores energéticos y de volumen de recinto para mayor exactitud conservadora.</p>
+
+                    <h3 class="text-2xl font-bold mt-8">Dérmico: RISKOFDERM (UE)</h3>
+                    <p>Transforma frases H cutáneas específicas (H314, H317, H350) en un <i>Hazard Score</i> intrínseco (Bajo a Extremo). Lo cruza con unidades de Operación de Exposición Dérmica (DEO) empíricamente estudiadas para arrojar una criticidad del 1 al 10.</p>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- Core App Logic -->
+    <script>
+        lucide.createIcons();
+
+        const App = (function() {
+            'use strict';
+
+            const { jsPDF } = window.jspdf;
+
+            // --- CONSTANTES ---
+            const CONSTANTS = {
+                ALL_H_PHRASES: {
+                    'H220': 'Gas ext. inflamable.', 'H224': 'Líquido ext. inflamable.', 'H225': 'Líquido muy inflamable.', 'H226': 'Líquidos inflamables.', 'H272': 'Comburente.', 
+                    'H300': 'Mortal ingestión.', 'H301': 'Tóxico ingestión.', 'H302': 'Nocivo ingestión.', 'H310': 'Mortal contacto piel.', 'H311': 'Tóxico contacto piel.', 'H312': 'Nocivo contacto piel.', 'H314': 'Quemaduras graves piel.', 'H315': 'Irritación cutánea.', 'H317': 'Alergia piel.', 'H318': 'Lesiones oculares.', 'H319': 'Irritación ocular.', 'H330': 'Mortal inhalación.', 'H331': 'Tóxico inhalación.', 'H332': 'Nocivo inhalación.', 'H334': 'Asma inhalación.', 'H335': 'Irrita vías resp.', 'H336': 'Somnolencia.', 'H340': 'Defectos genéticos.', 'H341': 'Sosp. defectos genéticos.', 'H350': 'Provoca cáncer.', 'H351': 'Sosp. cáncer.', 'H360': 'Perjudica fertilidad/feto.', 'H361': 'Sosp. perjudica fertilidad.', 'H370': 'Daños órganos.', 'H372': 'Daños órganos repetida.', 'H373': 'Puede dañar órganos.'
+                },
+                HAZARD_BANDS: { 
+                    'H316':'A','H320':'A','H336':'A','H335':'A', 
+                    'H302':'B','H312':'B','H332':'B','H315':'B','H319':'B', 
+                    'H301':'C','H311':'C','H331':'C','H314':'C','H318':'C','H317':'C','H371':'C','H373':'C', 
+                    'H330':'D','H300':'D','H310':'D','H334':'D','H341':'D','H351':'D','H361':'D','H370':'D','H372':'D', 
+                    'H340':'E','H350':'E','H360':'E' 
+                },
+                DERMAL_HAZARDS: {
+                    'H350': 5, 'H340': 5, 
+                    'H314': 4, 'H317': 4, 'H310': 4,
+                    'H351': 3, 'H318': 3, 'H311': 3,
+                    'H315': 2, 'H312': 2
+                },
+                HAZARD_CLASSES_MAP: {
+                    'FLAMMABLE': ['H220', 'H224', 'H225', 'H226'], 
+                    'OXIDIZER': ['H270', 'H271', 'H272'], 
+                    'CORROSIVE': ['H290', 'H314'], 
+                    'ACUTE_TOXIC_HIGH': ['H300', 'H310', 'H330']
+                },
+                INCOMPATIBILITY_RULES: {
+                    'FLAMMABLE-OXIDIZER': 'INCOMPATIBLE: Alto riesgo de incendio/explosión.', 
+                    'OXIDIZER-FLAMMABLE': 'INCOMPATIBLE: Alto riesgo de incendio/explosión.', 
+                    'CORROSIVE-FLAMMABLE': 'PRECAUCIÓN: Los corrosivos dañan envases inflamables.', 
+                    'FLAMMABLE-CORROSIVE': 'PRECAUCIÓN: Los corrosivos dañan envases inflamables.', 
+                    'ACUTE_TOXIC_HIGH-ANY': 'SEPARAR: Tóxicos agudos aislados y seguros.',
+                    'ANY-ACUTE_TOXIC_HIGH': 'SEPARAR: Tóxicos agudos aislados y seguros.'
+                }
+            };
+
+            const state = {
+                currentStep: 1,
+                wizardTotalSteps: 5,
+                apiCache: {},
+                unifiedResult: null // Holds both inhalatorio and dermico
+            };
+
+            // --- API PUBCHEM ---
+            const ApiService = {
+                async getChemicalDataByCID(cid) {
+                    if (!cid) return null;
+                    if (state.apiCache[`cid-${cid}`]) return state.apiCache[`cid-${cid}`];
+                    try {
+                        const [propRes, ghsRes] = await Promise.all([
+                            fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/IUPACName/JSON`),
+                            fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=GHS+Classification`)
+                        ]);
+                        const propData = await propRes.json();
+                        const compoundName = propData?.PropertyTable?.Properties?.[0]?.IUPACName || "Químico";
+                        
+                        let hPhrases = [];
+                        if (ghsRes.ok) {
+                            const rawGhsData = await ghsRes.json();
+                            const ghsSection = rawGhsData?.Record?.Section?.find(s => s.TOCHeading === "GHS Classification");
+                            if (ghsSection && ghsSection.Section) {
+                                ghsSection.Section.forEach(hazard => {
+                                    const info = hazard.Information?.[0]?.Value?.StringWithMarkup;
+                                    if (info) {
+                                        const statement = info.find(i => i.String.startsWith('H'))?.String;
+                                        if(statement && !hPhrases.includes(statement)) hPhrases.push(statement);
+                                    }
+                                });
+                            }
+                        }
+                        const result = { name: compoundName, hPhrases, cid: cid };
+                        state.apiCache[`cid-${cid}`] = result;
+                        return result;
+                    } catch (e) { return null; }
+                },
+                async getChemicalData(casNumber) {
+                    const cas = (casNumber || "").trim();
+                    if (!cas) return null;
+                    if (state.apiCache[cas]) return state.apiCache[cas];
+                    try {
+                        const rnUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/xref/RN/${encodeURIComponent(cas)}/cids/JSON`;
+                        const response = await fetch(rnUrl);
+                        if (!response.ok) return null;
+                        const data = await response.json();
+                        const cid = data.IdentifierList?.CID?.[0];
+                        if (!cid) return null;
+                        const fullData = await this.getChemicalDataByCID(cid);
+                        if(fullData) {
+                            const result = { ...fullData, cas: cas };
+                            state.apiCache[cas] = result;
+                            return result;
+                        }
+                        return null;
+                    } catch (e) { return null; }
+                }
+            };
+
+            // --- CORE CALCULATOR ---
+            const Calculator = {
+                // Inhalatorio Core
+                getHighestBand(phrases) {
+                    if(!phrases || phrases.length===0) return 'A';
+                    let highest = 'A';
+                    const order = ['A','B','C','D','E'];
+                    phrases.forEach(p => {
+                        const code = p.match(/H\d{3}/)?.[0];
+                        if (code && CONSTANTS.HAZARD_BANDS[code]) {
+                            const b = CONSTANTS.HAZARD_BANDS[code];
+                            if(order.indexOf(b) > order.indexOf(highest)) highest = b;
+                        }
+                    });
+                    return highest;
+                },
+                getExposureBand(estado, propiedad, proceso, duracion, cantidad, modifiers) {
+                    const propMap = { 'baja': 10, 'media': 50, 'alta': 200 };
+                    const procMap = [0, 10, 50, 50, 100, 200];
+                    const cantMap = { 'pequena': 0.5, 'mediana': 1.0, 'grande': 2.0 };
+
+                    let exp = (propMap[propiedad] || 50) + (procMap[proceso] || 50);
+                    exp *= duracion * (cantMap[cantidad] || 1.0);
+                    
+                    if(modifiers) {
+                        exp *= (modifiers.vol * modifiers.vent * modifiers.temp);
+                    }
+                    if (exp < 50) return 1;
+                    if (exp <= 250) return 2;
+                    if (exp <= 1000) return 3;
+                    return 4;
+                },
+                getControlLevel(peligro, exposicion, estado, isCmr) {
+                    if (isCmr || peligro === 'E') return 4;
+                    const map = {'A':0, 'B':1, 'C':2, 'D':3};
+                    const mat = {
+                        solido:  [ [1, 1, 2, 3], [1, 2, 3, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
+                        liquido: [ [1, 1, 2, 2], [1, 2, 2, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
+                        gas:     [ [1, 2, 3, 4], [2, 3, 4, 4], [3, 4, 4, 4], [4, 4, 4, 4] ]
+                    };
+                    return mat[estado]?.[map[peligro]]?.[exposicion - 1] ?? 1;
+                },
+                
+                // Dérmico Core
+                getDermalHazardScore(phrases) {
+                    let score = 1;
+                    phrases.forEach(p => {
+                        const code = p.match(/H\d{3}/)?.[0];
+                        if (code && CONSTANTS.DERMAL_HAZARDS[code]) {
+                            if(CONSTANTS.DERMAL_HAZARDS[code] > score) score = CONSTANTS.DERMAL_HAZARDS[code];
+                        }
+                    });
+                    return score;
+                },
+                getDermalExposureScore(task) {
+                    const map = {
+                        'contam_solids': 4, 'disperse_solids': 4, 
+                        'contam_liquids': 3, 'tool_solids': 3, 'spray_solids': 3, 'spray_liquids': 3, 'immersion_solids': 3, 'immersion_liquids': 3, 'mech_liquids': 3,
+                        'disperse_liquids': 3, 'tool_liquids': 3
+                    };
+                    return map[task] || 2;
+                },
+                getDermalRiskScore(hazard, exp) {
+                    const mat = [
+                        [1, 2, 3, 6], [2, 3, 6, 8], [5, 6, 8, 9], [6, 8, 9, 10], [8, 9, 10, 10]
+                    ];
+                    return mat[Math.min(hazard-1,4)][Math.min(exp-1,3)];
+                }
+            };
+
+            // --- HISTORY MANAGER ---
+            const HistoryManager = {
+                key: 'sst_evaluations_history',
+                save(evaluation) {
+                    const hist = this.getAll();
+                    evaluation.id = `EV-${Date.now()}`;
+                    evaluation.timestamp = new Date().toISOString();
+                    hist.unshift(evaluation);
+                    localStorage.setItem(this.key, JSON.stringify(hist));
+                    this.renderList();
+                    UI.showToast("Evaluación guardada en Historial", "success");
+                },
+                getAll() { return JSON.parse(localStorage.getItem(this.key)) || []; },
+                delete(id) {
+                    const hist = this.getAll().filter(e => e.id !== id);
+                    localStorage.setItem(this.key, JSON.stringify(hist));
+                    this.renderList();
+                    UI.showToast("Evaluación eliminada");
+                },
+                loadToDashboard(id) {
+                    const hist = this.getAll();
+                    const evalData = hist.find(e => e.id === id);
+                    if(evalData) {
+                        UI.changeTab('evaluacion_unificada');
+                        state.unifiedResult = evalData;
+                        UI.renderUnifiedDashboard();
+                        const resultDiv = document.getElementById('resultadoEvaluacion');
+                        if (resultDiv) {
+                            resultDiv.classList.remove('hidden');
+                            setTimeout(()=> resultDiv.classList.remove('opacity-0'), 50);
+                        }
+                    }
+                },
+                renderList() {
+                    const tbody = document.getElementById('history-table-body');
+                    const empty = document.getElementById('history-empty');
+                    if (!tbody || !empty) return;
+
+                    const data = this.getAll();
+                    if(data.length === 0) {
+                        tbody.innerHTML = '';
+                        empty.classList.remove('hidden');
+                        return;
+                    }
+                    empty.classList.add('hidden');
+                    
+                    tbody.innerHTML = data.map(d => `
+                        <tr class="hover:bg-slate-50 transition-colors group">
+                            <td class="px-6 py-4 text-slate-500">${new Date(d.timestamp).toLocaleDateString()}</td>
+                            <td class="px-6 py-4 font-bold text-brand-dark">${d.inhalatorio.name}</td>
+                            <td class="px-6 py-4 text-slate-500">${d.context.process}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="bg-slate-100 text-brand-teal px-2 py-1 rounded font-black text-xs">Banda ${d.inhalatorio.band} (Nivel ${d.inhalatorio.controlReq})</span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="bg-slate-100 text-brand-dark px-2 py-1 rounded font-black text-xs">Score ${d.dermico.riskScore}/10</span>
+                            </td>
+                            <td class="px-6 py-4 text-center opacity-0 group-hover:opacity-100 transition-opacity flex justify-center gap-2">
+                                <button onclick="App.History.loadToDashboard('${d.id}')" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                <button onclick="App.History.delete('${d.id}')" class="text-red-400 hover:text-red-600" title="Eliminar"><i data-lucide="trash" class="w-5 h-5"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    lucide.createIcons();
+                }
+            };
+
+            // --- PERSISTENCIA (DRAFT) --- 
+            const Storage = {
+                save() {
+                    const form = document.getElementById('unifiedBandingForm');
+                    if (!form) return;
+                    const fd = new FormData(form);
+                    const data = Object.fromEntries(fd.entries());
+                    const is_cmr = document.getElementById('is_cmr');
+                    const is_nano = document.getElementById('is_nano');
+                    if (is_cmr) data.is_cmr = is_cmr.checked;
+                    if (is_nano) data.is_nano = is_nano.checked;
+                    localStorage.setItem('sst_draft', JSON.stringify(data));
+                },
+                load() {
+                    const data = JSON.parse(localStorage.getItem('sst_draft'));
+                    if(!data) return;
+                    Object.keys(data).forEach(k => {
+                        const el = document.getElementsByName(k)[0];
+                        if(el) {
+                            if(el.type === 'checkbox') el.checked = data[k];
+                            else el.value = data[k];
+                        }
+                    });
+                    const estadoFisico = document.getElementById('estado_fisico');
+                    if (estadoFisico) estadoFisico.dispatchEvent(new Event('change'));
+                },
+                clear() {
+                    localStorage.removeItem('sst_draft');
+                }
+            };
+
+            // --- INTERFAZ UI ---
+            const UI = {
+                init() {
+                    // Solo inicializar cosas básicas y chequear persistencia.
+                    const prompt = document.getElementById('session-restore-prompt');
+                    if(prompt && localStorage.getItem('sst_draft')) {
+                        prompt.classList.remove('hidden');
+                        document.getElementById('restore-yes')?.addEventListener('click', () => {
+                            Storage.load();
+                            prompt.classList.add('hidden');
+                            UI.showToast("Sesión restaurada con éxito", "success");
+                        });
+                        document.getElementById('restore-no')?.addEventListener('click', () => {
+                            Storage.clear();
+                            prompt.classList.add('hidden');
+                        });
+                    }
+                },
+                showToast(msg, type='info') {
+                    const t = document.getElementById('toast-notification');
+                    const msgEl = document.getElementById('toast-message');
+                    const icon = document.getElementById('toast-icon');
+                    if (!t || !msgEl || !icon) return;
+
+                    msgEl.textContent = msg;
+                    t.className = `toast show ${type==='error'?'toast-error':''}`;
+                    icon.setAttribute('data-lucide', type==='error'?'alert-circle':(type==='success'?'check-circle':'info'));
+                    lucide.createIcons();
+                    setTimeout(()=> t.classList.remove('show'), 3500);
+                },
+                changeTab(tabId) {
+                    if(!tabId) return;
+                    document.querySelectorAll('.tab').forEach(t => {
+                        const act = t.dataset.tab === tabId;
+                        t.className = act ? 'tab active flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-brand-teal text-white shadow-md shadow-brand-teal/20' 
+                                          : 'tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all';
+                    });
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === tabId));
+                    if(tabId === 'historial') HistoryManager.renderList();
+                    if(tabId === 'sustitucion' && state.unifiedResult) {
+                        const info = document.getElementById('current-product-info');
+                        if (info) {
+                            info.innerHTML = `
+                                <div class="text-center w-full">
+                                    <h4 class="font-extrabold text-2xl text-brand-dark mb-4">${state.unifiedResult.inhalatorio.name}</h4>
+                                    <p class="text-slate-500 font-medium mb-2 uppercase tracking-widest text-xs">Nivel de Peligro Base</p>
+                                    <div class="mt-2 inline-flex items-center justify-center bg-brand-teal text-white px-8 py-3 rounded-full font-black text-3xl shadow-lg shadow-brand-teal/30">
+                                        Banda ${state.unifiedResult.inhalatorio.band}
+                                    </div>
+                                    <div class="mt-4 flex justify-center gap-4">
+                                        <span class="bg-brand-dark text-white px-4 py-1 rounded font-bold text-sm">Dérmico: Nivel ${state.unifiedResult.dermico.hazardLvl}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                },
+                showStep(step) {
+                    if(step > state.currentStep) {
+                        const currentDiv = document.getElementById(`step-${state.currentStep}`);
+                        if (currentDiv) {
+                            const reqs = currentDiv.querySelectorAll('[required]');
+                            for(let r of reqs) {
+                                if(!r.value && !r.closest('.hidden')) {
+                                    r.classList.add('input-error');
+                                    setTimeout(()=>r.classList.remove('input-error'),2000);
+                                    this.showToast("Complete los campos obligatorios (*)", "error");
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+
+                    document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+                    const targetDiv = document.getElementById(`step-${step}`);
+                    if(targetDiv) targetDiv.classList.add('active');
+
+                    const pb = document.getElementById('progressBar');
+                    if (pb) pb.style.width = `${(step/state.wizardTotalSteps)*100}%`;
+                    
+                    for(let i=1; i<=5; i++) {
+                        const lbl = document.getElementById(`step-label-${i}`);
+                        if(lbl) lbl.className = i <= step ? 'text-brand-teal font-extrabold' : 'text-slate-400 font-bold';
+                    }
+                    state.currentStep = step;
+                    Storage.save();
+                    return true;
+                },
+                renderMatrix(estado, peligro, exp) {
+                    const matrices = {
+                        solido:  [ [1, 1, 2, 3], [1, 2, 3, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
+                        liquido: [ [1, 1, 2, 2], [1, 2, 2, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
+                        gas:     [ [1, 2, 3, 4], [2, 3, 4, 4], [3, 4, 4, 4], [4, 4, 4, 4] ]
+                    };
+                    const mat = matrices[estado] || matrices.liquido;
+                    const b = ['A', 'B', 'C', 'D'];
+                    const bIdx = b.indexOf(peligro);
+                    const eIdx = exp - 1;
+
+                    let html = `<thead><tr><th class="w-16">Peligro</th><th>EP1</th><th>EP2</th><th>EP3</th><th>EP4</th></tr></thead><tbody>`;
+                    mat.forEach((row, i) => {
+                        html += `<tr><th>${b[i]}</th>`;
+                        row.forEach((cell, j) => {
+                            const isHighlight = (i === bIdx && j === eIdx) && peligro !== 'E';
+                            html += `<td class="matrix-cell-${cell} ${isHighlight ? 'highlight-matrix' : ''}">${cell}</td>`;
+                        });
+                        html += `</tr>`;
+                    });
+                    return html + `</tbody>`;
+                },
+                renderUnifiedDashboard() {
+                    if(!state.unifiedResult) return;
+                    const res = state.unifiedResult;
+                    
+                    const elName = document.getElementById('res-chemical-name');
+                    const elInfo = document.getElementById('res-eval-info');
+                    if (elName) elName.textContent = res.inhalatorio.name;
+                    if (elInfo) elInfo.textContent = `${res.context.process} | ${res.context.date}`;
+                    
+                    const elInhBand = document.getElementById('res-inh-band');
+                    const elInhExp = document.getElementById('res-inh-exp');
+                    const elInhReq = document.getElementById('res-inh-req');
+                    if(elInhBand) elInhBand.textContent = res.inhalatorio.band;
+                    if(elInhExp) elInhExp.textContent = res.inhalatorio.exp;
+                    if(elInhReq) elInhReq.textContent = res.inhalatorio.controlReq;
+                    
+                    const residMap = {
+                        1: {c: 'bg-red-100 text-red-700', t: 'Inaceptable'},
+                        0: {c: 'bg-brand-yellow/20 text-yellow-700', t: 'Moderado'},
+                        '-1': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
+                        '-2': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
+                        '-3': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
+                    };
+                    const diff = res.inhalatorio.controlReq === 4 ? 1 : res.inhalatorio.controlReq - res.context.existControl;
+                    const resSt = diff > 0 ? residMap[1] : (diff === 0 ? residMap[0] : residMap['-1']);
+                    
+                    const elInhResid = document.getElementById('res-inh-resid');
+                    if(elInhResid) {
+                        elInhResid.className = `status-badge ${resSt.c}`;
+                        elInhResid.textContent = resSt.t;
+                    }
+
+                    const hText = ['Nulo','Bajo','Moderado','Alto','Muy Alto','Extremo'];
+                    const eText = ['Nula','Baja','Media','Alta','Muy Alta'];
+                    
+                    const elDerHaz = document.getElementById('res-der-haz');
+                    const elDerExp = document.getElementById('res-der-exp');
+                    const elDerScore = document.getElementById('res-der-score');
+                    if(elDerHaz) elDerHaz.textContent = hText[res.dermico.hazardLvl] || 'Indeterminado';
+                    if(elDerExp) elDerExp.textContent = eText[res.dermico.expLvl] || 'Indeterminada';
+                    if(elDerScore) elDerScore.textContent = res.dermico.riskScore;
+                    
+                    let dCrit = {c: 'bg-red-100 text-red-700', t:'Inaceptable'};
+                    if(res.dermico.riskScore <=3) dCrit={c:'bg-green-100 text-green-700', t:'Aceptable'};
+                    else if(res.dermico.riskScore <=6) dCrit={c:'bg-brand-yellow/20 text-yellow-700', t:'Mejorar'};
+                    
+                    const elDerCrit = document.getElementById('res-der-crit');
+                    if (elDerCrit) {
+                        elDerCrit.className = `status-badge ${dCrit.c}`;
+                        elDerCrit.textContent = dCrit.t;
+                    }
+
+                    const inhRec = {
+                        1: 'Ventilación General y Limpieza frecuente. Uso de EPI básico.',
+                        2: 'Extracción Localizada (VEL) operativa indispensable. Protección respiratoria.',
+                        3: 'Proceso confinado (Cabinas). Sistemas cerrados. Alta supervisión.',
+                        4: 'Detener y consultar especialista. Modificar diseño de ingeniería.'
+                    };
+                    
+                    const planInh = document.getElementById('plan-inhalatorio');
+                    if (planInh) {
+                        planInh.innerHTML = `
+                            <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-teal"></i> Inhalatorio (Nivel ${res.inhalatorio.controlReq})</h4>
+                            <p class="text-sm mt-2 text-slate-600 font-medium">${inhRec[res.inhalatorio.controlReq] || 'Sin datos'}</p>
+                        `;
+                    }
+
+                    const derRec = {
+                        1: 'Higiene básica.', 2: 'Guantes estándar.', 3: 'Disminuir exposición técnica/organizativa.', 4: 'Obligatorio aislar/guantes químicos.', 5: 'Reducir toxicidad.',
+                        6: 'Obligatorias medidas preventivas fuertes.', 7: 'Urgente reducción exposición.', 8: 'Aconsejar sustitución.', 9: 'Detener y rediseñar.', 10: 'Sustitución imprescindible.'
+                    };
+                    
+                    const planDer = document.getElementById('plan-dermico');
+                    if (planDer) {
+                        planDer.innerHTML = `
+                            <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="hand" class="w-4 h-4 text-brand-yellow"></i> Dérmico (Score ${res.dermico.riskScore})</h4>
+                            <p class="text-sm mt-2 text-slate-600 font-medium">${derRec[res.dermico.riskScore] || 'Sin datos'}</p>
+                        `;
+                    }
+                    
+                    const matrixUnified = document.getElementById('riskMatrix-unified');
+                    if(matrixUnified) matrixUnified.innerHTML = this.renderMatrix(res.context.estado, res.inhalatorio.band, res.inhalatorio.exp);
+
+                    lucide.createIcons();
+                }
+            };
+
+            const Handlers = {
+                addMixtureComponent() {
+                    const c = document.getElementById('mixture-components');
+                    if(!c) return;
+                    const d = document.createElement('div');
+                    d.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200';
+                    d.innerHTML = `
+                        <input type="text" class="input-field mix-cas !py-1.5 !text-sm flex-[2]" placeholder="CAS">
+                        <input type="number" class="input-field mix-conc !py-1.5 !text-sm flex-1" placeholder="%" min="0" max="100">
+                        <button type="button" class="text-slate-400 hover:text-red-500 p-1" onclick="this.parentElement.remove()"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    `;
+                    c.appendChild(d);
+                    lucide.createIcons();
+
+                    const casInput = d.querySelector('.mix-cas');
+                    casInput.addEventListener('blur', async (e) => {
+                        const cas = e.target.value.trim();
+                        if(cas) {
+                            const data = await ApiService.getChemicalData(cas);
+                            if(data) {
+                                d.dataset.h = data.hPhrases ? data.hPhrases.join(',') : '';
+                                UI.showToast(`Identificado: ${data.name}`, 'success');
+                            } else {
+                                UI.showToast(`CAS no encontrado en BD.`, 'error');
+                            }
+                        }
+                    });
+                },
+                async calcMixture() {
+                    const rows = document.querySelectorAll('#mixture-components > div');
+                    if(rows.length===0) return UI.showToast("Añada componentes", "error");
+                    
+                    const btn = document.getElementById('calculate-mixture-btn');
+                    if(btn) btn.innerHTML = `<span class="loader border-t-white w-4 h-4 mr-2"></span> Calculando...`;
+                    
+                    let inhBands = [];
+                    let derScores = [];
+                    
+                    for(let r of rows) {
+                        const casInput = r.querySelector('.mix-cas');
+                        const concInput = r.querySelector('.mix-conc');
+                        const cas = casInput ? casInput.value : '';
+                        const conc = concInput ? parseFloat(concInput.value) : NaN;
+                        const h = r.dataset.h || "";
+                        
+                        if(cas && !isNaN(conc)) {
+                            const phArr = h.toUpperCase().split(',');
+                            
+                            // Inh
+                            const b = Calculator.getHighestBand(phArr);
+                            inhBands.push({band: b, conc});
+                            
+                            // Der
+                            const ds = Calculator.getDermalHazardScore(phArr);
+                            if((ds===5 && conc >=0.1) || (ds<5 && conc>=1)) {
+                                derScores.push(ds);
+                            }
+                        }
+                    }
+
+                    // Eval Inhalatoria Mezcla
+                    let finalB = 'A';
+                    for(let b of ['E','D','C','B']) {
+                        const t = {'E':0.1, 'D':1, 'C':10, 'B':20}[b];
+                        if(inhBands.some(x => x.band===b && x.conc >= t)) { finalB = b; break; }
+                    }
+
+                    // Eval Dérmica Mezcla
+                    const finalD = derScores.length > 0 ? Math.max(...derScores) : 1;
+
+                    const resInh = document.getElementById('mix-res-inh');
+                    const resDer = document.getElementById('mix-res-der');
+                    const resBox = document.getElementById('mixture-result');
+
+                    if(resInh) resInh.textContent = finalB;
+                    if(resDer) resDer.textContent = ['Nulo','Bajo','Moderado','Alto','Muy Alto','Extremo'][finalD];
+                    if(resBox) resBox.classList.remove('hidden');
+                    
+                    const casField = document.getElementById('cas_number');
+                    const hField = document.getElementById('h_phrases');
+                    if(casField) casField.value = 'Mezcla Evaluada';
+                    if(hField) hField.value = `Asignado por calculadora (Banda ${finalB})`;
+                    
+                    if(btn) btn.innerHTML = "Calcular Clasificación Global";
+                    UI.showToast("Peligro de mezcla asignado al formulario principal.", "success");
+                },
+
+                async submitUnified(e) {
+                    e.preventDefault();
+                    const btn = document.getElementById('submit-eval-btn');
+                    if(btn) {
+                        btn.disabled = true; 
+                        btn.innerHTML = '<span class="loader border-t-white mr-2"></span> Procesando...';
+                    }
+
+                    try {
+                        const form = document.getElementById('unifiedBandingForm');
+                        const fd = new FormData(form);
+                        const data = Object.fromEntries(fd.entries());
+                        const isPura = data.product_type === 'pura';
+                        
+                        let name = isPura ? data.chemical_name_pura : data.chemical_name_mezcla;
+                        let bandInh = 'A';
+                        let scoreDer = 1;
+
+                        if(isPura) {
+                            const phArr = data.h_phrases ? data.h_phrases.toUpperCase().split(',').map(s=>s.trim()) : [];
+                            bandInh = Calculator.getHighestBand(phArr);
+                            const is_cmr = document.getElementById('is_cmr')?.checked;
+                            if(is_cmr) bandInh = 'E';
+                            scoreDer = Calculator.getDermalHazardScore(phArr);
+                        } else {
+                            bandInh = document.getElementById('mix_banda_inh')?.value || 'A';
+                            scoreDer = parseInt(document.getElementById('mix_score_der')?.value || 1);
+                        }
+
+                        // Mods
+                        const mods = { 
+                            vol: parseFloat(document.getElementById('workplace_volume')?.value || 1), 
+                            vent: parseFloat(document.getElementById('ventilation_type')?.value || 1), 
+                            temp: parseFloat(document.getElementById('process_energy')?.value || 1) 
+                        };
+                        const propInh = data.estado_fisico==='solido'? data.pulverulencia : (data.estado_fisico==='liquido'?data.volatilidad:data.emision_gas);
+                        
+                        // Calc
+                        const is_cmr = document.getElementById('is_cmr')?.checked;
+                        const expInh = Calculator.getExposureBand(data.estado_fisico, propInh, parseInt(data.tipo_proceso), parseFloat(data.duracion), data.cantidad_utilizada, mods);
+                        const cReq = Calculator.getControlLevel(bandInh, expInh, data.estado_fisico, is_cmr);
+                        
+                        const expDer = Calculator.getDermalExposureScore(data.dermal_task);
+                        const rDer = Calculator.getDermalRiskScore(scoreDer, expDer);
+
+                        state.unifiedResult = {
+                            context: { company: data.companyName, process: data.process, date: data.evalDate, existControl: parseInt(data.controles_existentes), estado: data.estado_fisico },
+                            inhalatorio: { name: name||'Sin Nombre', band: bandInh, exp: expInh, controlReq: cReq },
+                            dermico: { hazardLvl: scoreDer, expLvl: expDer, riskScore: rDer }
+                        };
+
+                        UI.renderUnifiedDashboard();
+                        const resD = document.getElementById('resultadoEvaluacion');
+                        if (resD) {
+                            resD.classList.remove('hidden');
+                            setTimeout(()=> { resD.classList.remove('opacity-0'); resD.scrollIntoView({behavior:'smooth'}); }, 50);
+                        }
+
+                    } catch (err) { 
+                        console.error(err); 
+                        UI.showToast("Error procesando los datos", "error"); 
+                    } finally { 
+                        if(btn) {
+                            btn.disabled=false; 
+                            btn.innerHTML = '<i data-lucide="calculator" class="w-6 h-6"></i> Procesar Evaluación Global'; 
+                            lucide.createIcons(); 
+                        }
+                    }
+                },
+
+                async compareSubst() {
+                    if(!state.unifiedResult) return UI.showToast("Cargue línea base primero", "error");
+                    const cas = document.getElementById('sub-cas-number')?.value;
+                    const hs = document.getElementById('sub-h_phrases')?.value;
+                    if(!hs) return UI.showToast("Frases H obligatorias para sustitución", "error");
+
+                    const btn = document.getElementById('compare-btn');
+                    if(btn) btn.innerHTML = '<span class="loader border-t-white"></span> Analizando...';
+
+                    const pArr = hs.toUpperCase().split(',').map(s=>s.trim());
+                    const altBand = Calculator.getHighestBand(pArr);
+                    const altDer = Calculator.getDermalHazardScore(pArr);
+
+                    const baseBand = state.unifiedResult.inhalatorio.band;
+                    const baseDer = state.unifiedResult.dermico.hazardLvl;
+                    
+                    const ord = ['A','B','C','D','E'];
+                    const diffI = ord.indexOf(altBand) - ord.indexOf(baseBand);
+                    const diffD = altDer - baseDer;
+
+                    let cls='', msg='', icon='';
+                    if(diffI <= 0 && diffD <= 0 && (diffI < 0 || diffD < 0)) {
+                        cls = 'bg-brand-green/10 text-brand-green border-brand-green'; msg = 'Sustitución Recomendable'; icon = 'check-circle';
+                    } else if (diffI > 0 || diffD > 0) {
+                        cls = 'bg-red-50 text-red-600 border-red-500'; msg = 'Sustitución Peligrosa'; icon = 'x-circle';
+                    } else {
+                        cls = 'bg-brand-yellow/10 text-brand-yellow border-brand-yellow'; msg = 'Peligro Equivalente'; icon = 'minus-circle';
+                    }
+
+                    const res = document.getElementById('comparison-result');
+                    if(res) {
+                        res.innerHTML = `
+                            <div class="p-6 rounded-2xl border-2 ${cls} flex items-center gap-4 bg-white">
+                                <i data-lucide="${icon}" class="w-10 h-10"></i>
+                                <div>
+                                    <h4 class="font-extrabold text-xl">${msg}</h4>
+                                    <p class="text-sm mt-1"><b>Alt:</b> Banda ${altBand} / Derm Nvl ${altDer} vs <b>Base:</b> Banda ${baseBand} / Derm Nvl ${baseDer}</p>
+                                </div>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                        res.classList.remove('hidden'); 
+                        setTimeout(()=>res.classList.remove('opacity-0'),50);
+                    }
+                    if(btn) {
+                        btn.innerHTML = '<i data-lucide="scale" class="w-5 h-5"></i> Ejecutar Análisis Comparativo'; 
+                        lucide.createIcons();
+                    }
+                },
+
+                async checkCompatibility() {
+                    const btn = document.getElementById('check-compatibility-btn');
+                    if(btn) btn.innerHTML = `<span class="loader border-t-white w-5 h-5 mr-3"></span> Analizando...`;
+                    
+                    const getCls = async (cas, h) => {
+                        const info = { name: cas || 'Desc', classes: new Set() };
+                        let phrases = h ? h.toUpperCase().split(',').map(s=>s.trim()) : [];
+                        if (cas) {
+                            const data = await ApiService.getChemicalData(cas);
+                            if (data) { info.name = data.name; phrases = [...phrases, ...(data.hPhrases||[])]; }
+                        }
+                        Object.keys(CONSTANTS.HAZARD_CLASSES_MAP).forEach(k => {
+                            if(phrases.some(p => CONSTANTS.HAZARD_CLASSES_MAP[k].includes(p.substring(0,4)))) info.classes.add(k);
+                        });
+                        return { name: info.name, classes: Array.from(info.classes) };
+                    };
+
+                    const [c1, c2] = await Promise.all([
+                        getCls(document.getElementById('chem1_cas')?.value, document.getElementById('chem1_h')?.value),
+                        getCls(document.getElementById('chem2_cas')?.value, document.getElementById('chem2_h')?.value)
+                    ]);
+
+                    let status = 'COMPATIBLE', msg = 'No se detectan incompatibilidades graves SGA directas. Revise FDS.';
+                    let statCls = 'bg-brand-green/10 text-brand-green border-brand-green/20', icon='check-circle-2';
+
+                    c1.classes.forEach(cls1 => {
+                        c2.classes.forEach(cls2 => {
+                            const r1 = CONSTANTS.INCOMPATIBILITY_RULES[`${cls1}-${cls2}`];
+                            const r2 = CONSTANTS.INCOMPATIBILITY_RULES[`${cls2}-${cls1}`];
+                            if(r1 || r2) { status = 'INCOMPATIBLE'; msg = r1 || r2; statCls='bg-red-50 text-red-600 border-red-200'; icon='alert-triangle'; }
+                        });
+                    });
+
+                    const resDiv = document.getElementById('compatibility-result');
+                    if(resDiv) {
+                        resDiv.innerHTML = `
+                            <div class="p-10 rounded-[24px] border-2 ${statCls} text-center glass-card !shadow-none">
+                                <i data-lucide="${icon}" class="w-16 h-16 mx-auto mb-4"></i>
+                                <h3 class="text-3xl font-black mb-3">${status}</h3>
+                                <p class="font-bold text-lg opacity-90 text-brand-dark">${msg}</p>
+                                <div class="mt-6 text-sm font-bold flex justify-center gap-8 opacity-75 text-brand-dark uppercase tracking-widest">
+                                    <span>${c1.name}: [${c1.classes.join(', ')||'S/D'}]</span>
+                                    <span>${c2.name}: [${c2.classes.join(', ')||'S/D'}]</span>
+                                </div>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                        resDiv.classList.remove('hidden');
+                        setTimeout(()=> resDiv.classList.remove('opacity-0'), 50);
+                    }
+                    
+                    if(btn) {
+                        btn.innerHTML = `<i data-lucide="git-compare-arrows" class="w-6 h-6"></i> Analizar Compatibilidad`;
+                        lucide.createIcons();
+                    }
+                },
+
+                genPDF() {
+                    if(!state.unifiedResult) return;
+                    UI.showToast("Generando reporte oficial...");
+                    try {
+                        const doc = new jsPDF({format: 'a4'});
+                        const cd = `CB-${Date.now().toString().slice(-8)}`;
+                        const res = state.unifiedResult;
+
+                        doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(0,0,0);
+                        doc.text('REPORTE OFICIAL SST - CONTROL BANDING', 15, 20);
+                        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+                        doc.text(`ID: ${cd} | Vía La Movida de SST`, 15, 28);
+
+                        doc.autoTable({
+                            startY: 35,
+                            head: [['Datos', '']],
+                            body: [ ['Empresa / Evaluador', `${res.context.company} / Eval.`], ['Proceso', `${res.context.process}`], ['Químico', res.inhalatorio.name] ],
+                            theme: 'grid', styles: {textColor: 0, lineColor: 0, lineWidth: 0.5}, headStyles: {fillColor: 50, textColor: 255}
+                        });
+
+                        let y = doc.autoTable.previous.finalY + 15;
+                        doc.setFillColor(240); doc.rect(15, y, 85, 40, 'FD'); doc.rect(110, y, 85, 40, 'FD');
+                        
+                        // Inh Box
+                        doc.setFont('helvetica', 'bold'); doc.text('RIESGO INHALATORIO', 20, y+8);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(`Banda: ${res.inhalatorio.band}`, 20, y+18);
+                        doc.text(`Exp: EP${res.inhalatorio.exp}`, 20, y+26);
+                        doc.setFont('helvetica', 'bold'); doc.text(`Ctrl Req: Nivel ${res.inhalatorio.controlReq}`, 20, y+35);
+
+                        // Der Box
+                        doc.setFont('helvetica', 'bold'); doc.text('RIESGO DÉRMICO', 115, y+8);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(`Peligro (1-5): Nvl ${res.dermico.hazardLvl}`, 115, y+18);
+                        doc.text(`Exp (1-4): Nvl ${res.dermico.expLvl}`, 115, y+26);
+                        doc.setFont('helvetica', 'bold'); doc.text(`Riesgo Global: ${res.dermico.riskScore}/10`, 115, y+35);
+
+                        doc.save(`SST_Eval_${cd}.pdf`);
+                        const vf = JSON.parse(localStorage.getItem('sst_verified')||'{}');
+                        vf[cd] = new Date().toISOString(); localStorage.setItem('sst_verified', JSON.stringify(vf));
+                    } catch(e) { console.error(e); UI.showToast("Error en PDF", "error"); }
+                }
+            };
+
+            // --- INICIALIZADOR ---
+            return {
+                History: HistoryManager,
+                init() {
+                    UI.init();
+                    
+                    document.getElementById('tab-navigation')?.addEventListener('click', e => {
+                        const t = e.target.closest('.tab');
+                        if(t) UI.changeTab(t.dataset.tab);
+                    });
+                    
+                    document.querySelector('[data-target-tab="instrucciones"]')?.addEventListener('click', () => {
+                        UI.changeTab('instrucciones');
+                        document.getElementById('instrucciones')?.scrollIntoView({ behavior: 'smooth' });
+                    });
+
+                    document.getElementById('unifiedBandingForm')?.addEventListener('click', e => {
+                        const b = e.target.closest('[data-wizard-action]');
+                        if(b) {
+                            if(b.dataset.wizardAction === 'next') UI.showStep(state.currentStep + 1);
+                            if(b.dataset.wizardAction === 'prev') UI.showStep(state.currentStep - 1);
+                        }
+                    });
+
+                    document.getElementById('toggle-expert-mode')?.addEventListener('click', () => {
+                        document.getElementById('expert-mode-fields')?.classList.toggle('hidden');
+                    });
+
+                    document.getElementById('estado_fisico')?.addEventListener('change', e => {
+                        const v = e.target.value;
+                        document.getElementById('propiedad_solido')?.classList.toggle('hidden', v !== 'solido');
+                        document.getElementById('propiedad_liquido')?.classList.toggle('hidden', v !== 'liquido');
+                        document.getElementById('propiedad_gas')?.classList.toggle('hidden', v !== 'gas');
+                    });
+
+                    ['cas_number', 'chem1_cas', 'chem2_cas', 'sub-cas-number'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if(el) {
+                            el.addEventListener('blur', async e => {
+                                const cas = e.target.value.trim();
+                                const box = document.getElementById(`${id}-info-display`);
+                                if(!cas||!box) return;
+                                box.innerHTML = `<span class="text-xs text-brand-teal"><i data-lucide="loader" class="w-3 h-3 animate-spin inline"></i> Buscando...</span>`;
+                                lucide.createIcons();
+                                const data = await ApiService.getChemicalData(cas);
+                                if(data) {
+                                    box.innerHTML = `<span class="text-xs text-brand-green font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> ${data.name}</span>`;
+                                    if(id==='cas_number') {
+                                        const inputName = document.getElementById('chemical_name_pura');
+                                        if (inputName) inputName.value = data.name;
+                                    }
+                                    const hiId = id === 'cas_number' ? 'h_phrases' : (id === 'sub-cas-number' ? 'sub-h_phrases' : id.replace('_cas', '_h'));
+                                    const hi = document.getElementById(hiId);
+                                    if(hi && data.hPhrases) hi.value = data.hPhrases.map(p=>p.split(' ')[0]).join(', ');
+                                } else {
+                                    box.innerHTML = `<span class="text-xs text-red-500 font-bold">CAS no encontrado. Ingrese frases manuales.</span>`;
+                                }
+                                lucide.createIcons();
+                            });
+                        }
+                    });
+
+                    document.getElementById('unifiedBandingForm')?.addEventListener('submit', Handlers.submitUnified);
+                    document.getElementById('add-component-btn')?.addEventListener('click', Handlers.addMixtureComponent);
+                    document.getElementById('calculate-mixture-btn')?.addEventListener('click', Handlers.calcMixture);
+                    document.getElementById('save-history-btn')?.addEventListener('click', () => {
+                        if (state.unifiedResult) HistoryManager.save(state.unifiedResult);
+                        else UI.showToast("No hay resultados para guardar", "error");
+                    });
+                    document.getElementById('pdf-unified-btn')?.addEventListener('click', Handlers.genPDF);
+                    document.getElementById('compare-btn')?.addEventListener('click', Handlers.compareSubst);
+                    document.getElementById('check-compatibility-btn')?.addEventListener('click', Handlers.checkCompatibility);
+                    
+                    document.getElementById('reset-eval-btn')?.addEventListener('click', () => {
+                        document.getElementById('unifiedBandingForm')?.reset(); 
+                        state.unifiedResult = null;
+                        document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
+                        UI.showStep(1);
+                    });
+
+                    document.getElementById('clear-form-btn')?.addEventListener('click', () => {
+                        Storage.clear();
+                        document.getElementById('unifiedBandingForm')?.reset();
+                        UI.showStep(1);
+                        UI.showToast("Datos locales limpiados", "success");
+                    });
+
+                    document.getElementById('verify-report-btn')?.addEventListener('click', () => {
+                        const codeInput = document.getElementById('report-code-input');
+                        if (!codeInput) return;
+                        const code = codeInput.value.trim();
+                        const verified = JSON.parse(localStorage.getItem('sst_verified') || '{}');
+                        const res = document.getElementById('verification-result');
+                        if (!res) return;
+                        if(verified[code]) {
+                            res.innerHTML = `<div class="glass-card bg-brand-green/10 border-2 border-brand-green text-brand-green p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-check" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">Documento Auténtico Válido</h4><p class="font-medium mt-1 text-slate-600">Generado el ${new Date(verified[code]).toLocaleString()}</p></div></div>`;
+                        } else {
+                            res.innerHTML = `<div class="glass-card bg-red-50 border-2 border-red-500 text-red-600 p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-alert" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">No Válido / No Encontrado</h4><p class="font-medium mt-1 text-slate-600">Este código no figura en los registros oficiales de este dispositivo.</p></div></div>`;
+                        }
+                        lucide.createIcons();
+                    });
+
+                    const setupAutocomplete = (id) => {
+                        const inp = document.getElementById(id);
+                        if(!inp) return;
+                        inp.addEventListener("input", function() {
+                            let a, b, val = this.value;
+                            const arr = Object.keys(CONSTANTS.ALL_H_PHRASES);
+                            document.querySelectorAll('.autocomplete-items').forEach(e=>e.remove());
+                            if (!val) return;
+                            const terms = val.toUpperCase().split(',').map(s=>s.trim());
+                            const term = terms[terms.length-1];
+                            if(!term) return;
+
+                            a = document.createElement("DIV");
+                            a.setAttribute("class", "autocomplete-items");
+                            this.parentNode.appendChild(a);
+                            
+                            let matches = 0;
+                            for (let i = 0; i < arr.length; i++) {
+                                if (arr[i].includes(term) || CONSTANTS.ALL_H_PHRASES[arr[i]].toUpperCase().includes(term)) {
+                                    if(matches++ > 8) break;
+                                    b = document.createElement("DIV");
+                                    b.innerHTML = `<strong>${arr[i]}</strong>: ${CONSTANTS.ALL_H_PHRASES[arr[i]]}`;
+                                    b.addEventListener("click", function() {
+                                        terms[terms.length-1] = arr[i];
+                                        inp.value = terms.join(', ') + ', ';
+                                        a.remove();
+                                    });
+                                    a.appendChild(b);
+                                }
+                            }
+                        });
+                    };
+                    ['h_phrases', 'chem1_h', 'chem2_h', 'sub-h_phrases'].forEach(setupAutocomplete);
+                    document.addEventListener('click', e => { 
+                        if(!e.target.matches('.input-field')) {
+                            document.querySelectorAll('.autocomplete-items').forEach(el=>el.remove()); 
+                        }
+                    });
+
+                    document.getElementById('estado_fisico')?.dispatchEvent(new Event('change'));
+                    const evalDateInput = document.getElementById('evalDate');
+                    if(evalDateInput && !evalDateInput.value) evalDateInput.valueAsDate = new Date();
+                }
+            };
+        })();
+
+        document.addEventListener('DOMContentLoaded', App.init);
+    </script>
+</body>
+</html>
