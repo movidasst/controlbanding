@@ -747,9 +747,12 @@
             <div id="historial" class="tab-content">
                 <div class="mb-8">
                     <h2 class="text-3xl font-extrabold text-brand-dark">Mis Evaluaciones</h2>
-                    <p class="text-slate-500 mt-2 font-medium">Gestione localmente las evaluaciones previas. Los datos se almacenan de forma segura en su navegador.</p>
+                    <p class="text-slate-500 mt-2 font-medium">Consulta evaluaciones guardadas localmente en este dispositivo. No hay sincronización ni cifrado del historial: evita almacenar datos sensibles en equipos compartidos.</p>
                 </div>
                 
+                <div class="m-soft-note m-amber-note" id="legacy-history-note" hidden>Si utilizaste esta versión antes del inicio de sesión, puedes importar tus evaluaciones antiguas. Los cálculos previos no se actualizan automáticamente; debes reevaluar su vigencia.
+                    <button id="import-legacy-history" type="button" class="m-logout ml-3">Importar historial antiguo</button>
+                </div>
                 <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm whitespace-nowrap">
@@ -1077,6 +1080,18 @@
                     UI.showToast("Evaluación guardada en Historial", "success");
                 },
                 getAll() { try { const items=JSON.parse(localStorage.getItem(this.key)); return Array.isArray(items)?items:[]; } catch { return []; } },
+                importLegacy() {
+                    let old=[];
+                    try {old=JSON.parse(localStorage.getItem('sst_evaluations_history')||'[]');}catch{}
+                    if(!Array.isArray(old)||!old.length)return UI.showToast('No hay historial anterior para importar.','error');
+                    if(!window.confirm('Vas a asociar el historial antiguo de este navegador con tu integrante. Confirma solo si esas evaluaciones son tuyas. Los resultados previos deben reevaluarse.'))return;
+                    const current=this.getAll(),ids=new Set(current.map(e=>String(e.id)));
+                    const clean=old.filter(e=>e&&typeof e==='object'&&e.inhalatorio?.name&&e.context&&e.dermico&&typeof e.id==='string')
+                        .filter(e=>!ids.has(String(e.id))).map(e=>({...e,legacy_methodology:true}));
+                    localStorage.setItem(this.key,JSON.stringify([...current,...clean]));
+                    this.renderList();
+                    UI.showToast(clean.length+' evaluaciones antiguas importadas (requieren revisión).','success');
+                },
                 delete(id) {
                     const hist = this.getAll().filter(e => e.id !== id);
                     localStorage.setItem(this.key, JSON.stringify(hist));
@@ -1087,6 +1102,9 @@
                     const hist = this.getAll();
                     const evalData = hist.find(e => e.id === id);
                     if(evalData) {
+                        if(evalData.legacy_methodology || evalData.context?.metodo!=='COSHH HSE 2019'){
+                            UI.showToast('Evaluación histórica con cálculo anterior: no la utilices sin reevaluación.','error');
+                        }
                         UI.changeTab('evaluacion_unificada');
                         state.unifiedResult = evalData;
                         UI.renderUnifiedDashboard();
@@ -1103,6 +1121,8 @@
                     if (!tbody || !empty) return;
 
                     const data = this.getAll();
+                    const legacy=document.getElementById('legacy-history-note');
+                    if(legacy)legacy.hidden=!localStorage.getItem('sst_evaluations_history');
                     if(data.length === 0) {
                         tbody.innerHTML = '';
                         empty.classList.remove('hidden');
@@ -1112,7 +1132,7 @@
                     
                     tbody.innerHTML = data.map(d => `
                         <tr class="hover:bg-slate-50 transition-colors group">
-                            <td class="px-6 py-4 text-slate-500">${new Date(d.timestamp).toLocaleDateString()}</td>
+                            <td class="px-6 py-4 text-slate-500">${Number.isFinite(Date.parse(d.timestamp))?new Date(d.timestamp).toLocaleDateString():'Sin fecha'} ${d.legacy_methodology?'<small class="text-amber-800">(antigua)</small>':''}</td>
                             <td class="px-6 py-4 font-bold text-brand-dark">${escapeHTML(d.inhalatorio.name)}</td>
                             <td class="px-6 py-4 text-slate-500">${escapeHTML(d.context.process)}</td>
                             <td class="px-6 py-4 text-center">
@@ -1121,9 +1141,9 @@
                             <td class="px-6 py-4 text-center">
                                 <span class="bg-slate-100 text-brand-dark px-2 py-1 rounded font-black text-xs">Score ${d.dermico.riskScore}/10</span>
                             </td>
-                            <td class="px-6 py-4 text-center opacity-0 group-hover:opacity-100 transition-opacity flex justify-center gap-2">
-                                <button onclick="App.History.loadToDashboard('${d.id}')" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
-                                <button onclick="App.History.delete('${d.id}')" class="text-red-400 hover:text-red-600" title="Eliminar"><i data-lucide="trash" class="w-5 h-5"></i></button>
+                            <td class="px-6 py-4 text-center opacity-100 flex justify-center gap-2">
+                                <button type="button" data-hist-action="load" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                <button type="button" data-hist-action="delete" data-id="${escapeHTML(d.id)}" class="text-red-600 hover:text-red-800" title="Eliminar"><i data-lucide="trash" class="w-5 h-5"></i></button>
                             </td>
                         </tr>
                     `).join('');
@@ -1496,6 +1516,7 @@
 
                 async compareSubst() {
                     if(!state.unifiedResult) return UI.showToast("Cargue línea base primero", "error");
+                     if(state.unifiedResult.context?.metodo!=='COSHH HSE 2019')return UI.showToast('Reevalúe primero el producto con el método actual.','error');
                     const cas = document.getElementById('sub-cas-number')?.value;
                     const hs = document.getElementById('sub-h_phrases')?.value;
                     if(!hs) return UI.showToast("Frases H obligatorias para sustitución", "error");
@@ -1622,6 +1643,13 @@
                 History: HistoryManager,
                 init() {
                     UI.init();
+                    document.getElementById('import-legacy-history')?.addEventListener('click',()=>HistoryManager.importLegacy());
+                    document.getElementById('history-table-body')?.addEventListener('click',e=>{
+                        const b=e.target.closest('button[data-hist-action]');
+                        if(!b)return;
+                        if(b.dataset.histAction==='load')HistoryManager.loadToDashboard(b.dataset.id);
+                        if(b.dataset.histAction==='delete'&&window.confirm('¿Eliminar esta evaluación del historial local?'))HistoryManager.delete(b.dataset.id);
+                    });
                     // La selección de mezcla no debe mostrar ni reutilizar campos de sustancia pura.
                     const changeProductMode=()=>{
                         const mixed=document.querySelector('input[name="product_type"]:checked')?.value==='mezcla';
