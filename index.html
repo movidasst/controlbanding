@@ -220,10 +220,10 @@
         <!-- Sidebar Navigation -->
         <aside class="w-full md:w-64 flex-shrink-0">
             <nav id="tab-navigation" class="glass-card flex flex-col space-y-2 p-4 sticky top-28" aria-label="Secciones de Control Banding">
-                <button class="tab active flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-brand-teal text-white shadow-md shadow-brand-teal/20" data-tab="evaluacion_unificada">
+                <button type="button" class="tab active flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-brand-teal text-white shadow-md shadow-brand-teal/20" data-tab="evaluacion_unificada">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i> Nueva Evaluación
                 </button>
-                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-dark rounded-xl hover:bg-slate-100/50 hover:text-brand-teal transition-all" data-tab="historial">
+                <button type="button" class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-dark rounded-xl hover:bg-slate-100/50 hover:text-brand-teal transition-all" data-tab="historial">
                     <i data-lucide="folder-open" class="w-5 h-5"></i> Mis Evaluaciones
                 </button>
                 
@@ -572,11 +572,11 @@
                     <div id="step-4" class="wizard-step">
                         <div class="mb-6">
                             <h3 class="text-xl font-extrabold text-brand-dark mb-2">Exposición dérmica (estimación orientativa)</h3>
-                            <p class="text-sm text-slate-500">Seleccione la Unidad DEO (Dermal Exposure Operation) que mejor describa la interacción física del trabajador con el producto.</p>
+                            <p class="text-sm text-slate-500">Seleccione la tarea que mejor describa la interacción física del trabajador con el producto. Es una estimación orientativa de prioridad dérmica.</p>
                         </div>
 
                         <div class="bg-white/60 p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-3xl mx-auto">
-                            <label class="block text-sm font-bold text-brand-dark mb-4">Categoría de Tarea Estandarizada</label>
+                            <label for="dermal_task" class="block text-sm font-bold text-brand-dark mb-4">Categoría de tarea</label>
                             <select name="dermal_task" id="dermal_task" class="input-field !text-base !py-4">
                                 <optgroup label="Manipulación Directa">
                                     <option value="contam_solids">Manejo de objetos contaminados con polvo/sólidos</option>
@@ -670,7 +670,7 @@
                                 <button id="pdf-unified-btn" class="px-5 py-2.5 text-sm font-bold text-white bg-brand-dark rounded-xl hover:bg-[#001030] transition-colors shadow-md flex items-center gap-2">
                                     <i data-lucide="file-text" class="w-4 h-4"></i> Reporte PDF
                                 </button>
-                                <button id="reset-eval-btn" type="button" aria-label="Nueva evaluación: limpiar formulario" class="px-4 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                                <button id="reset-eval-btn" type="button" title="Nueva evaluación" aria-label="Nueva evaluación: limpiar formulario" class="px-4 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -1134,10 +1134,12 @@
                 },
                 exportAll() {
                     if(!AuthGate.isReady())return;
-                    const records=this.getAll();
-                    const data=ControlBandingEvidence.envelope(AuthGate.userId(),records);
-                    ControlBandingEvidence.downloadText(JSON.stringify(data,null,2),ControlBandingEvidence.filenameBase()+'-historial.json');
-                    UI.showToast('Historial exportado. Guarda el archivo en un lugar protegido.','success');
+                    try{
+                        const records=this.getAll();
+                        const data=ControlBandingEvidence.envelope(AuthGate.userId(),records);
+                        ControlBandingEvidence.downloadText(JSON.stringify(data,null,2),ControlBandingEvidence.filenameBase()+'-historial.json');
+                        UI.showToast('Historial exportado. Guarda el archivo en un lugar protegido.','success');
+                    }catch(err){UI.showToast(err.message||'No se pudo exportar el historial.','error');}
                 },
                 async importJSON(file) {
                     if(!file)return;
@@ -1266,7 +1268,8 @@
                         state.mixResult=null;state.unifiedResult=null;state.editingId=null;
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         state.restoring=false;
-                        UI.showStep(Math.max(1,Math.min(snapshot?.fields?.product_type==='mezcla'?2:5,Number(data?.step)||1)));
+                        // No saltar validaciones de pasos previos al recuperar un borrador.
+                        UI.showStep(1);
                         UI.showToast('Borrador y componentes restaurados. Recalcula la mezcla antes de avanzar.','success');
                     }catch(e){UI.showToast('No se pudo recuperar el borrador: '+e.message,'error');}
                     finally{state.restoring=false;}
