@@ -900,8 +900,8 @@
                     <div class="bg-brand-dark/5 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-8 text-brand-dark">
                         <i data-lucide="file-check-2" class="w-12 h-12"></i>
                     </div>
-                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Verificar Autenticidad de Informe</h2>
-                    <p class="text-slate-500 mb-10 font-medium text-lg leading-relaxed">Introduzca el código único del PDF (Ej: CB-172470218) para validar que se generó en esta máquina sin alteraciones.</p>
+                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Consultar Registro Local del Informe</h2>
+                    <p class="text-slate-500 mb-10 font-medium text-lg leading-relaxed">Introduzca el identificador de un informe generado en este navegador. Esta consulta local no demuestra autenticidad ni integridad documental.</p>
                     
                     <div class="flex max-w-lg mx-auto shadow-xl rounded-2xl overflow-hidden border border-slate-200 focus-within:ring-4 focus-within:ring-brand-teal/30 focus-within:border-brand-teal transition-all">
                         <input type="text" id="report-code-input" class="flex-1 border-0 bg-white/90 px-6 py-4 text-lg font-medium text-brand-dark focus:outline-none" placeholder="CB-...">
@@ -1156,6 +1156,7 @@
                     });
                     const estadoFisico = document.getElementById('estado_fisico');
                     if (estadoFisico) estadoFisico.dispatchEvent(new Event('change'));
+                     document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
                 },
                 clear() {
                     localStorage.removeItem('sst_draft_' + AuthGate.userId());
@@ -1515,9 +1516,9 @@
 
                     let cls='', msg='', icon='';
                     if(diffI <= 0 && diffD <= 0 && (diffI < 0 || diffD < 0)) {
-                        cls = 'bg-brand-green/10 text-brand-green border-brand-green'; msg = 'Sustitución Recomendable'; icon = 'check-circle';
+                        cls = 'bg-brand-green/10 text-brand-green border-brand-green'; msg = 'Posible mejora: validar'; icon = 'check-circle';
                     } else if (diffI > 0 || diffD > 0) {
-                        cls = 'bg-red-50 text-red-600 border-red-500'; msg = 'Sustitución Peligrosa'; icon = 'x-circle';
+                        cls = 'bg-red-50 text-red-600 border-red-500'; msg = 'Posible empeoramiento'; icon = 'x-circle';
                     } else {
                         cls = 'bg-brand-yellow/10 text-brand-yellow border-brand-yellow'; msg = 'Peligro Equivalente'; icon = 'minus-circle';
                     }
@@ -1544,74 +1545,45 @@
                 },
 
                 async checkCompatibility() {
-                    const btn = document.getElementById('check-compatibility-btn');
-                    if(btn) btn.innerHTML = `<span class="loader border-t-white w-5 h-5 mr-3"></span> Analizando...`;
-                    
-                    const getCls = async (cas, h) => {
-                        const info = { name: cas || 'Desc', classes: new Set() };
-                        let phrases = h ? h.toUpperCase().split(',').map(s=>s.trim()) : [];
-                        if (cas) {
-                            const data = await ApiService.getChemicalData(cas);
-                            if (data) { info.name = data.name; phrases = [...phrases, ...(data.hPhrases||[])]; }
-                        }
-                        Object.keys(CONSTANTS.HAZARD_CLASSES_MAP).forEach(k => {
-                            if(phrases.some(p => CONSTANTS.HAZARD_CLASSES_MAP[k].includes(p.substring(0,4)))) info.classes.add(k);
-                        });
-                        return { name: info.name, classes: Array.from(info.classes) };
-                    };
-
-                    const [c1, c2] = await Promise.all([
-                        getCls(document.getElementById('chem1_cas')?.value, document.getElementById('chem1_h')?.value),
-                        getCls(document.getElementById('chem2_cas')?.value, document.getElementById('chem2_h')?.value)
-                    ]);
-
-                    let status = 'COMPATIBLE', msg = 'No se detectan incompatibilidades graves SGA directas. Revise FDS.';
-                    let statCls = 'bg-brand-green/10 text-brand-green border-brand-green/20', icon='check-circle-2';
-
-                    c1.classes.forEach(cls1 => {
-                        c2.classes.forEach(cls2 => {
-                            const r1 = CONSTANTS.INCOMPATIBILITY_RULES[`${cls1}-${cls2}`];
-                            const r2 = CONSTANTS.INCOMPATIBILITY_RULES[`${cls2}-${cls1}`];
-                            if(r1 || r2) { status = 'INCOMPATIBLE'; msg = r1 || r2; statCls='bg-red-50 text-red-600 border-red-200'; icon='alert-triangle'; }
-                        });
-                    });
-
-                    const resDiv = document.getElementById('compatibility-result');
-                    if(resDiv) {
-                        resDiv.innerHTML = `
-                            <div class="p-10 rounded-[24px] border-2 ${statCls} text-center glass-card !shadow-none">
-                                <i data-lucide="${icon}" class="w-16 h-16 mx-auto mb-4"></i>
-                                <h3 class="text-3xl font-black mb-3">${status}</h3>
-                                <p class="font-bold text-lg opacity-90 text-brand-dark">${msg}</p>
-                                <div class="mt-6 text-sm font-bold flex justify-center gap-8 opacity-75 text-brand-dark uppercase tracking-widest">
-                                    <span>${c1.name}: [${c1.classes.join(', ')||'S/D'}]</span>
-                                    <span>${c2.name}: [${c2.classes.join(', ')||'S/D'}]</span>
-                                </div>
-                            </div>
-                        `;
-                        lucide.createIcons();
-                        resDiv.classList.remove('hidden');
-                        setTimeout(()=> resDiv.classList.remove('opacity-0'), 50);
-                    }
-                    
-                    if(btn) {
-                        btn.innerHTML = `<i data-lucide="git-compare-arrows" class="w-6 h-6"></i> Analizar Compatibilidad`;
-                        lucide.createIcons();
+                    const btn=document.getElementById('check-compatibility-btn');
+                    if(btn)btn.disabled=true;
+                    const resDiv=document.getElementById('compatibility-result');
+                    try {
+                        const identify=async(casId,hId)=>{
+                            const cas=document.getElementById(casId)?.value?.trim()||'';
+                            let raw=document.getElementById(hId)?.value?.trim()||'';
+                            let name=cas||'Producto';
+                            if(!raw && cas){
+                                const chemical=await ApiService.getChemicalData(cas);
+                                if(chemical?.hPhrases?.length){raw=chemical.hPhrases.join(',');name=chemical.name;}
+                            }
+                            return {name,codes:ControlBandingMethod.codes(raw,false)};
+                        };
+                        const [a,b]=await Promise.all([identify('chem1_cas','chem1_h'),identify('chem2_cas','chem2_h')]);
+                        const result=ControlBandingMethod.compatibility(a.codes,b.codes);
+                        const alert=result.status==='ALERTA DE INCOMPATIBILIDAD';
+                        const css=alert?'bg-red-50 text-red-700 border-red-300':'bg-amber-50 text-amber-900 border-amber-300';
+                        resDiv.innerHTML=`<div class="p-6 rounded-2xl border-2 ${css} text-center"><h3 class="text-xl font-black mb-3">${escapeHTML(result.status)}</h3><p class="font-medium">${escapeHTML(result.message)}</p><p class="text-sm mt-4">Producto A: ${escapeHTML(a.name)} · Producto B: ${escapeHTML(b.name)}</p><p class="text-sm mt-3">La ausencia de alertas no significa compatibilidad demostrada.</p></div>`;
+                    }catch(err){
+                        resDiv.innerHTML=`<div class="p-6 rounded-xl border-2 border-amber-300 bg-amber-50 text-amber-900"><strong>NO EVALUABLE</strong><p class="mt-2">${escapeHTML(err.message||'Faltan datos de la FDS.')}</p></div>`;
+                    }finally{
+                        resDiv.classList.remove('hidden');resDiv.classList.remove('opacity-0');
+                        if(btn){btn.disabled=false;btn.textContent='Analizar Compatibilidad';}
                     }
                 },
 
                 genPDF() {
                     if(!state.unifiedResult) return;
-                    UI.showToast("Generando reporte oficial...");
+                    UI.showToast("Generando informe orientativo...");
                     try {
                         const doc = new jsPDF({format: 'a4'});
                         const cd = `CB-${Date.now().toString().slice(-8)}`;
                         const res = state.unifiedResult;
 
                         doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(0,0,0);
-                        doc.text('REPORTE OFICIAL SST - CONTROL BANDING', 15, 20);
+                        doc.text('INFORME DE CRIBADO - CONTROL BANDING', 15, 20);
                         doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-                        doc.text(`ID: ${cd} | Vía La Movida de SST`, 15, 28);
+                        doc.text(`ID local: ${cd} | La Movida de SST+ | Resultado orientativo`, 15, 28);
 
                         doc.autoTable({
                             startY: 35,
@@ -1637,9 +1609,10 @@
                         doc.text(`Exp (1-4): Nvl ${res.dermico.expLvl}`, 115, y+26);
                         doc.setFont('helvetica', 'bold'); doc.text(`Riesgo Global: ${res.dermico.riskScore}/10`, 115, y+35);
 
-                        doc.save(`SST_Eval_${cd}.pdf`);
-                        const vf = JSON.parse(localStorage.getItem('sst_verified')||'{}');
-                        vf[cd] = new Date().toISOString(); localStorage.setItem('sst_verified', JSON.stringify(vf));
+                        doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('No certifica exposición segura ni sustituye la FDS ni una evaluación profesional.', 15, 285);
+                         doc.save(`SST_Eval_${cd}.pdf`);
+                        const vf = JSON.parse(localStorage.getItem('sst_verified_' + AuthGate.userId())||'{}');
+                        vf[cd] = new Date().toISOString(); localStorage.setItem('sst_verified_' + AuthGate.userId(), JSON.stringify(vf));
                     } catch(e) { console.error(e); UI.showToast("Error en PDF", "error"); }
                 }
             };
@@ -1649,6 +1622,18 @@
                 History: HistoryManager,
                 init() {
                     UI.init();
+                    // La selección de mezcla no debe mostrar ni reutilizar campos de sustancia pura.
+                    const changeProductMode=()=>{
+                        const mixed=document.querySelector('input[name="product_type"]:checked')?.value==='mezcla';
+                        document.getElementById('mode-pura')?.classList.toggle('hidden',mixed);
+                        document.getElementById('mode-mezcla')?.classList.toggle('hidden',!mixed);
+                        state.mixResult=null;
+                        document.getElementById('mix_banda_inh').value='';
+                        document.getElementById('mix_score_der').value='';
+                        document.getElementById('mixture-result')?.classList.add('hidden');
+                    };
+                    document.querySelectorAll('input[name="product_type"]').forEach(r=>r.addEventListener('change',changeProductMode));
+                    changeProductMode();
                     
                     document.getElementById('tab-navigation')?.addEventListener('click', e => {
                         const t = e.target.closest('.tab');
@@ -1735,13 +1720,13 @@
                         const codeInput = document.getElementById('report-code-input');
                         if (!codeInput) return;
                         const code = codeInput.value.trim();
-                        const verified = JSON.parse(localStorage.getItem('sst_verified') || '{}');
+                        const verified = JSON.parse(localStorage.getItem('sst_verified_' + AuthGate.userId()) || '{}');
                         const res = document.getElementById('verification-result');
                         if (!res) return;
                         if(verified[code]) {
-                            res.innerHTML = `<div class="glass-card bg-brand-green/10 border-2 border-brand-green text-brand-green p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-check" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">Documento Auténtico Válido</h4><p class="font-medium mt-1 text-slate-600">Generado el ${new Date(verified[code]).toLocaleString()}</p></div></div>`;
+                            res.innerHTML = `<div class="glass-card bg-brand-green/10 border-2 border-brand-green text-brand-green p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-check" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">Código encontrado en este navegador</h4><p class="font-medium mt-1 text-slate-600">Generado el ${new Date(verified[code]).toLocaleString()}</p></div></div>`;
                         } else {
-                            res.innerHTML = `<div class="glass-card bg-red-50 border-2 border-red-500 text-red-600 p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-alert" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">No Válido / No Encontrado</h4><p class="font-medium mt-1 text-slate-600">Este código no figura en los registros oficiales de este dispositivo.</p></div></div>`;
+                            res.innerHTML = `<div class="glass-card bg-red-50 border-2 border-red-500 text-red-600 p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-alert" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">Código no encontrado</h4><p class="font-medium mt-1 text-slate-600">Este código no figura en el registro local de este navegador. No existe verificación independiente en servidor.</p></div></div>`;
                         }
                         lucide.createIcons();
                     });
