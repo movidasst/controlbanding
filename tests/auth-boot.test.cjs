@@ -10,13 +10,14 @@ const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
 const inline = scripts.filter(([,attrs,body])=>!attrs.includes('src=') && body.includes('const App ='));
 assert.equal(inline.length,1,'Se encontró un solo bootstrap inline de App');
 const listeners = {};
-const window = {};
+const window = {jspdf:{jsPDF:function jsPDF(){}}};
+const lucide={createIcons(){}};
 const document = {
   addEventListener(name,fn){listeners[name]=fn;},
   getElementById(id){return null;}
 };
 assert.doesNotThrow(()=>{
-  vm.runInNewContext(inline[0][2],{window,document,console,URL,Intl,Date,setTimeout,clearTimeout},{timeout:2000});
+  vm.runInNewContext(inline[0][2],{window,document,lucide,console,URL,Intl,Date,setTimeout,clearTimeout},{timeout:2000});
 },'El inline no debe requerir AuthGate mientras carga el HTML');
 assert.equal(typeof listeners.DOMContentLoaded,'function');
 assert.ok(window.App,'App queda disponible para AuthGate');
