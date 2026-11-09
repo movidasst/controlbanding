@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SST | Herramienta Avanzada de Control Banding</title>
+    <title>Control Banding | La Movida de SST+</title>
+    <meta name="description" content="Evaluación cualitativa y documentada de peligros químicos mediante COSHH Essentials. Comunidad de La Movida de SST+.">
     
     <link rel="stylesheet" href="theme-2026.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="methodology.js" defer></script>
     <script src="auth-gate.js" defer></script>
+    <script src="evaluation-evidence.js" defer></script>
+    <script src="report-pdf.js" defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -152,6 +155,7 @@
 <script defer src="https://www.movidasst.com/analytics.js?v=20261025-ga4com2"></script>
 </head>
 <body class="tech-grid relative min-h-screen flex flex-col auth-pending">
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
     <section id="member-gate" aria-labelledby="gate-heading">
         <div class="gate-card">
             <img class="gate-logo" src="https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp" alt="La Movida de SST+">
@@ -177,7 +181,7 @@
     </div>
 
     <!-- UI Elements -->
-    <div id="toast-notification" class="toast">
+    <div id="toast-notification" class="toast" role="status" aria-live="polite" aria-atomic="true">
         <i data-lucide="info" class="w-5 h-5 text-white" id="toast-icon"></i>
         <span id="toast-message"></span>
     </div>
@@ -214,7 +218,7 @@
         
         <!-- Sidebar Navigation -->
         <aside class="w-full md:w-64 flex-shrink-0">
-            <nav id="tab-navigation" class="glass-card flex flex-col space-y-2 p-4 sticky top-28" aria-label="Sidebar">
+            <nav id="tab-navigation" class="glass-card flex flex-col space-y-2 p-4 sticky top-28" aria-label="Secciones de Control Banding">
                 <button class="tab active flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-brand-teal text-white shadow-md shadow-brand-teal/20" data-tab="evaluacion_unificada">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i> Nueva Evaluación
                 </button>
@@ -246,7 +250,7 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="glass-card flex-grow p-6 md:p-10 min-h-[600px]">
+        <main id="main-content" tabindex="-1" class="glass-card flex-grow p-6 md:p-10 min-h-[600px]">
             
             <!-- Tab Content: Unified Risk Assessment -->
             <div id="evaluacion_unificada" class="tab-content active">
@@ -261,7 +265,7 @@
                 <!-- Wizard Progress -->
                 <div class="mb-10 relative">
                     <div class="overflow-hidden h-3 mb-4 text-xs flex rounded-full bg-slate-200/50">
-                        <div id="progressBar" style="width: 20%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-brand-teal transition-all duration-500"></div>
+                        <div id="progressBar" role="progressbar" aria-label="Avance de la evaluación" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" style="width: 20%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-brand-teal transition-all duration-500"></div>
                     </div>
                     <div class="flex justify-between text-[11px] sm:text-xs font-bold text-slate-400">
                         <span id="step-label-1" class="text-brand-teal">1. Contexto</span>
@@ -272,6 +276,12 @@
                     </div>
                 </div>
 
+                <div class="evidence-toolbar" role="group" aria-label="Guardar y recuperar evaluación">
+                    <button id="save-draft-btn" type="button" class="evidence-action"><i data-lucide="save" class="w-4 h-4" aria-hidden="true"></i> Guardar borrador</button>
+                    <button id="restore-draft-btn" type="button" class="evidence-action"><i data-lucide="refresh-cw" class="w-4 h-4" aria-hidden="true"></i> Recuperar borrador</button>
+                    <span id="draft-status" class="text-xs text-slate-600" role="status" aria-live="polite">El borrador se almacena únicamente en este navegador.</span>
+                </div>
+                <p id="wizard-errors" class="wizard-errors" role="alert" tabindex="-1" hidden></p>
                 <form id="unifiedBandingForm">
                     <!-- Step 1: Context Data -->
                     <div id="step-1" class="wizard-step active">
@@ -320,14 +330,14 @@
                     <!-- Step 2: Hazard Identification (Substance vs Mixture) -->
                     <div id="step-2" class="wizard-step">
                         <div class="flex flex-col sm:flex-row gap-4 mb-8 bg-slate-100/50 p-2 rounded-xl w-fit mx-auto border border-slate-200">
-                            <label class="flex-1 cursor-pointer">
-                                <input type="radio" name="product_type" value="pura" class="peer hidden" checked>
+                            <label class="flex-1 cursor-pointer product-radio-label">
+                                <input type="radio" name="product_type" value="pura" class="peer sr-only" checked>
                                 <div class="px-6 py-3 rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-brand-teal peer-checked:shadow-sm transition-all flex items-center justify-center gap-2 text-center">
                                     <i data-lucide="flask-round" class="w-4 h-4"></i> Sustancia Pura
                                 </div>
                             </label>
-                            <label class="flex-1 cursor-pointer">
-                                <input type="radio" name="product_type" value="mezcla" class="peer hidden">
+                            <label class="flex-1 cursor-pointer product-radio-label">
+                                <input type="radio" name="product_type" value="mezcla" class="peer sr-only">
                                 <div class="px-6 py-3 rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-brand-dark peer-checked:shadow-sm transition-all flex items-center justify-center gap-2 text-center">
                                     <i data-lucide="beaker" class="w-4 h-4"></i> Mezcla Compleja
                                 </div>
@@ -408,6 +418,17 @@
                                 <input type="hidden" id="mix_score_der" name="mix_score_der">
                             </div>
                         </div>
+
+                        <fieldset class="evidence-panel mt-8">
+                            <legend class="evidence-legend">Fuente de información y ficha de datos de seguridad (FDS)</legend>
+                            <p class="text-sm text-slate-600 mb-4">Estos datos permiten reproducir la evaluación y comprobar que se consultó una ficha identificable y vigente. La revisión profesional sigue siendo necesaria.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label for="fdSource">Fabricante / proveedor de la FDS <span aria-hidden="true">*</span></label><input id="fdSource" name="fdSource" class="input-field" type="text" maxlength="180" placeholder="Proveedor y producto documentado" required></div>
+                                <div><label for="fdRevision">Identificación / revisión de FDS <span aria-hidden="true">*</span></label><input id="fdRevision" name="fdRevision" class="input-field" type="text" maxlength="120" placeholder="Nº de revisión, edición o código" required></div>
+                                <div><label for="fdDate">Fecha de revisión de FDS (opcional)</label><input id="fdDate" name="fdDate" class="input-field" type="date"></div>
+                                <div><label for="fdUrl">Enlace HTTPS a la FDS (opcional)</label><input id="fdUrl" name="fdUrl" class="input-field" type="url" maxlength="900" placeholder="https://..."></div>
+                            </div>
+                        </fieldset>
 
                         <!-- Common Modifiers -->
                         <div class="mt-8 bg-slate-50 p-5 rounded-xl border border-slate-200">
@@ -554,7 +575,7 @@
 
                         <div class="bg-white/60 p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-3xl mx-auto">
                             <label class="block text-sm font-bold text-brand-dark mb-4">Categoría de Tarea Estandarizada</label>
-                            <select name="dermal_task" class="input-field !text-base !py-4" size="6" style="height: auto;">
+                            <select name="dermal_task" id="dermal_task" class="input-field !text-base !py-4">
                                 <optgroup label="Manipulación Directa">
                                     <option value="contam_solids">Manejo de objetos contaminados con polvo/sólidos</option>
                                     <option value="contam_liquids">Manejo de objetos húmedos/contaminados con líquidos</option>
@@ -590,7 +611,7 @@
                                 <i data-lucide="shield-alert" class="w-12 h-12"></i>
                             </div>
                             <h3 class="text-2xl font-extrabold text-brand-dark mb-3">Definición de Controles Actuales</h3>
-                            <p class="text-slate-500 mb-8 font-medium">Para determinar el Riesgo Residual con exactitud, indique qué tecnología de control principal está implementada <b>actualmente</b> en el puesto de trabajo.</p>
+                            <p class="text-slate-600 mb-8 font-medium">Seleccione la tecnología de control actualmente declarada. El sistema muestra una brecha orientativa: la suficiencia y eficacia de los controles deben verificarse en el puesto de trabajo.</p>
                             
                             <div class="text-left bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
                                 <label class="block text-sm font-bold text-brand-dark mb-3">Nivel Tecnológico Implementado</label>
@@ -604,6 +625,18 @@
                             </div>
                         </div>
 
+                        <fieldset class="evidence-panel mt-7 text-left">
+                            <legend class="evidence-legend">Plan de trabajo y verificación de controles</legend>
+                            <div class="space-y-4">
+                                <div><label for="planAction">Acciones propuestas y prioridad</label><textarea id="planAction" name="planAction" class="input-field" maxlength="4000" rows="3" placeholder="Sustitución, controles técnicos y otras acciones por verificar"></textarea></div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="planOwner">Responsable de implementación</label><input id="planOwner" name="planOwner" class="input-field" type="text" maxlength="180" placeholder="Cargo o persona responsable"></div>
+                                    <div><label for="planDue">Fecha objetivo</label><input id="planDue" name="planDue" class="input-field" type="date"></div>
+                                </div>
+                                <div><label for="planEvidence">Evidencia para verificar eficacia de los controles</label><textarea id="planEvidence" name="planEvidence" class="input-field" maxlength="4000" rows="2" placeholder="Inspección, medición, mantenimiento, revisión técnica"></textarea></div>
+                                <div><label for="planNotes">Observaciones técnicas y limitaciones</label><textarea id="planNotes" name="planNotes" class="input-field" maxlength="4000" rows="2"></textarea></div>
+                            </div>
+                        </fieldset>
                         <div class="mt-10 flex justify-between items-center border-t border-slate-200/60 pt-8">
                             <button type="button" data-wizard-action="prev" class="flex items-center gap-2 text-slate-500 hover:text-brand-dark px-4 py-2 font-bold transition-colors">
                                 <i data-lucide="arrow-left" class="w-5 h-5"></i> Anterior
@@ -618,6 +651,7 @@
                 <!-- Unified Dashboard (Hidden until calculated) -->
                 <div id="resultadoEvaluacion" class="mt-14 hidden opacity-0 transition-opacity duration-500">
                     <div id="report-container" class="bg-slate-50 border border-slate-200 p-6 md:p-8 rounded-[32px] shadow-sm">
+                        <p id="res-trace" class="m-soft-note" role="status">Informe técnico orientativo · Incluye FDS, entradas, resultados y plan de trabajo.</p>
                         
                         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4 border-b border-slate-200 pb-6">
                             <div>
@@ -634,7 +668,7 @@
                                 <button id="pdf-unified-btn" class="px-5 py-2.5 text-sm font-bold text-white bg-brand-dark rounded-xl hover:bg-[#001030] transition-colors shadow-md flex items-center gap-2">
                                     <i data-lucide="file-text" class="w-4 h-4"></i> Reporte PDF
                                 </button>
-                                <button id="reset-eval-btn" class="px-4 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                                <button id="reset-eval-btn" type="button" aria-label="Nueva evaluación: limpiar formulario" class="px-4 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -750,6 +784,11 @@
                     <p class="text-slate-500 mt-2 font-medium">Consulta evaluaciones guardadas localmente en este dispositivo. No hay sincronización ni cifrado del historial: evita almacenar datos sensibles en equipos compartidos.</p>
                 </div>
                 
+                <div class="evidence-toolbar mb-4" role="group" aria-label="Portabilidad del historial">
+                    <button id="export-history-btn" type="button" class="evidence-action">Exportar historial JSON</button>
+                    <button id="import-history-btn" type="button" class="evidence-action">Importar historial JSON</button>
+                    <input id="import-history-file" class="sr-only" type="file" accept=".json,application/json" tabindex="-1" aria-label="Archivo de historial Control Banding">
+                </div>
                 <div class="m-soft-note m-amber-note" id="legacy-history-note" hidden>Si utilizaste esta versión antes del inicio de sesión, puedes importar tus evaluaciones antiguas. Los cálculos previos no se actualizan automáticamente; debes reevaluar su vigencia.
                     <button id="import-legacy-history" type="button" class="m-logout ml-3">Importar historial antiguo</button>
                 </div>
@@ -783,7 +822,7 @@
             <div id="sustitucion" class="tab-content">
                 <div class="mb-10">
                     <h2 class="text-3xl font-extrabold text-brand-dark">Sustitución Multi-Criterio</h2>
-                    <p class="text-slate-500 mt-2 font-medium">Verifique si un químico alternativo reduce el riesgo global (Inhalatorio + Dérmico) comparado con el químico base.</p>
+                    <p class="text-slate-500 mt-2 font-medium">Compare peligros de alternativas. Una banda más baja no garantiza una sustitución segura: evalúe exposición, tareas y controles con sus respectivas FDS.</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
