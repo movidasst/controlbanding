@@ -389,7 +389,7 @@
                                         <i data-lucide="plus" class="w-4 h-4"></i> Añadir Componente
                                     </button>
                                     <button type="button" id="calculate-mixture-btn" class="w-full sm:w-auto text-sm font-bold text-white bg-brand-dark px-6 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
-                                        Calcular Clasificación Global
+                                        Calcular cribado de mezcla
                                     </button>
                                 </div>
                                 <div id="mixture-result" class="bg-slate-100 p-4 rounded-xl mt-6 hidden border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -545,10 +545,10 @@
                         </div>
                     </div>
 
-                    <!-- Step 4: Dermal Exposure Potential (RISKOFDERM) -->
+                    <!-- Step 4: Cribado dérmico orientativo (no RISKOFDERM validado) -->
                     <div id="step-4" class="wizard-step">
                         <div class="mb-6">
-                            <h3 class="text-xl font-extrabold text-brand-dark mb-2">Exposición Dérmica (Modelo RISKOFDERM)</h3>
+                            <h3 class="text-xl font-extrabold text-brand-dark mb-2">Exposición dérmica (estimación orientativa)</h3>
                             <p class="text-sm text-slate-500">Seleccione la Unidad DEO (Dermal Exposure Operation) que mejor describa la interacción física del trabajador con el producto.</p>
                         </div>
 
@@ -674,7 +674,7 @@
                             <!-- Panel Dérmico -->
                             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/80 relative overflow-hidden">
                                 <div class="absolute top-0 right-0 p-4 opacity-10 text-brand-yellow"><i data-lucide="hand" class="w-24 h-24"></i></div>
-                                <h3 class="text-lg font-extrabold text-brand-dark mb-6 flex items-center gap-2"><i data-lucide="hand" class="w-5 h-5 text-brand-yellow"></i> Vía Dérmica (RISKOFDERM)</h3>
+                                <h3 class="text-lg font-extrabold text-brand-dark mb-6 flex items-center gap-2"><i data-lucide="hand" class="w-5 h-5 text-brand-yellow"></i> Vía dérmica (orientativa)</h3>
                                 
                                 <div class="grid grid-cols-2 gap-4 mb-6">
                                     <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -887,7 +887,7 @@
                     <ol class="space-y-3 mt-4">
                         <li><strong>Identifique el químico (Paso 2):</strong> Seleccione si es "Pura" o "Mezcla". Al ingresar el CAS o usar la calculadora de mezclas, el sistema destila las frases H para separar los riesgos inhalatorios de los dérmicos matemáticamente.</li>
                         <li><strong>Parámetros Físicos (Paso 3 y 4):</strong> Responda sobre cómo se comporta la sustancia en el aire (volatilidad/polvo) y cómo contacta con el trabajador (tarea DEO).</li>
-                        <li><strong>Dashboard Final:</strong> Obtendrá un panel de control con el cruce de ambos modelos (COSHH + RISKOFDERM) y un PDF listo para imprimir. Guarde la evaluación para que quede en su "Historial".</li>
+                        <li><strong>Dashboard Final:</strong> Obtendrá un panel de control con el cribado inhalatorio COSHH y la prioridad dérmica orientativa y un PDF listo para imprimir. Guarde la evaluación para que quede en su "Historial".</li>
                     </ol>
                     
                     <div class="bg-brand-yellow/10 border-l-4 border-brand-yellow p-4 rounded-r-xl mt-6">
@@ -918,7 +918,7 @@
             <div id="fundamento" class="tab-content">
                 <div class="glass-card p-10 prose prose-slate max-w-none prose-headings:text-brand-dark">
                     <h2 class="text-3xl font-extrabold">Fundamentos Científicos</h2>
-                    <p class="text-lg font-medium text-slate-600">Este SaaS cruza las metodologías cualitativas más robustas para pymes.</p>
+                    <p class="text-lg font-medium text-slate-600">La herramienta aplica COSHH Essentials al cribado inhalatorio y una estimación dérmica orientativa. Requiere interpretación profesional.</p>
                     
                     <h3 class="text-2xl font-bold mt-8">Inhalatorio: COSHH Essentials (HSE)</h3>
                     <p>Agrupa las frases H para la salud en bandas A–E y aplica las tablas de potencial de exposición (cantidad y volatilidad o pulverulencia), con niveles de control de la tabla técnica del HSE. No se aplica a gases. Los datos del proceso y del entorno se conservan para contextualizar la evaluación, pero no modifican arbitrariamente la banda COSHH.</p>
@@ -944,7 +944,7 @@
             const CONSTANTS = {
                 ALL_H_PHRASES: {
                     'H220': 'Gas ext. inflamable.', 'H224': 'Líquido ext. inflamable.', 'H225': 'Líquido muy inflamable.', 'H226': 'Líquidos inflamables.', 'H272': 'Comburente.', 
-                    'H300': 'Mortal ingestión.', 'H301': 'Tóxico ingestión.', 'H302': 'Nocivo ingestión.', 'H310': 'Mortal contacto piel.', 'H311': 'Tóxico contacto piel.', 'H312': 'Nocivo contacto piel.', 'H314': 'Quemaduras graves piel.', 'H315': 'Irritación cutánea.', 'H317': 'Alergia piel.', 'H318': 'Lesiones oculares.', 'H319': 'Irritación ocular.', 'H330': 'Mortal inhalación.', 'H331': 'Tóxico inhalación.', 'H332': 'Nocivo inhalación.', 'H334': 'Asma inhalación.', 'H335': 'Irrita vías resp.', 'H336': 'Somnolencia.', 'H340': 'Defectos genéticos.', 'H341': 'Sosp. defectos genéticos.', 'H350': 'Provoca cáncer.', 'H351': 'Sosp. cáncer.', 'H360': 'Perjudica fertilidad/feto.', 'H361': 'Sosp. perjudica fertilidad.', 'H370': 'Daños órganos.', 'H372': 'Daños órganos repetida.', 'H373': 'Puede dañar órganos.'
+                    'H300': 'Mortal ingestión.', 'H301': 'Tóxico ingestión.', 'H302': 'Nocivo ingestión.', 'H310': 'Mortal contacto piel.', 'H311': 'Tóxico contacto piel.', 'H312': 'Nocivo contacto piel.', 'H314': 'Quemaduras graves piel.', 'H315': 'Irritación cutánea.', 'H317': 'Alergia piel.', 'H318': 'Lesiones oculares.', 'H319': 'Irritación ocular.', 'H330': 'Mortal inhalación.', 'H331': 'Tóxico inhalación.', 'H332': 'Nocivo inhalación.', 'H334': 'Asma inhalación.', 'H335': 'Irrita vías resp.', 'H336': 'Somnolencia.', 'H340': 'Defectos genéticos.', 'H341': 'Sosp. defectos genéticos.', 'H350': 'Provoca cáncer.', 'H351': 'Sosp. cáncer.', 'H360': 'Perjudica fertilidad/feto.', 'H361': 'Sosp. perjudica fertilidad.', 'H362': 'Puede perjudicar a lactantes.', 'H371': 'Puede provocar daños en órganos.', 'H370': 'Daños órganos.', 'H372': 'Daños órganos repetida.', 'H373': 'Puede dañar órganos.'
                 },
                 // La fuente única y vigente de frases H es methodology.js.
                 HAZARD_BANDS: null,
@@ -1136,10 +1136,10 @@
                             <td class="px-6 py-4 font-bold text-brand-dark">${escapeHTML(d.inhalatorio.name)}</td>
                             <td class="px-6 py-4 text-slate-500">${escapeHTML(d.context.process)}</td>
                             <td class="px-6 py-4 text-center">
-                                <span class="bg-slate-100 text-brand-teal px-2 py-1 rounded font-black text-xs">Banda ${d.inhalatorio.band} (Nivel ${d.inhalatorio.controlReq})</span>
+                                <span class="bg-slate-100 text-brand-teal px-2 py-1 rounded font-black text-xs">Banda ${escapeHTML(d.inhalatorio.band)} (Nivel ${escapeHTML(d.inhalatorio.controlReq)})</span>
                             </td>
                             <td class="px-6 py-4 text-center">
-                                <span class="bg-slate-100 text-brand-dark px-2 py-1 rounded font-black text-xs">Score ${d.dermico.riskScore}/10</span>
+                                <span class="bg-slate-100 text-brand-dark px-2 py-1 rounded font-black text-xs">Score ${escapeHTML(d.dermico.riskScore)}/10</span>
                             </td>
                             <td class="px-6 py-4 text-center opacity-100 flex justify-center gap-2">
                                 <button type="button" data-hist-action="load" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
@@ -1168,6 +1168,11 @@
                     const data = JSON.parse(localStorage.getItem('sst_draft_' + AuthGate.userId()));
                     if(!data) return;
                     Object.keys(data).forEach(k => {
+                         if(k==='product_type'){
+                             const radio=[...document.querySelectorAll('input[name="product_type"]')].find(r=>r.value===data[k]);
+                             if(radio)radio.checked=true;
+                             return;
+                         }
                         const el = document.getElementsByName(k)[0];
                         if(el) {
                             if(el.type === 'checkbox') el.checked = data[k];
@@ -1720,6 +1725,10 @@
                     });
 
                     document.getElementById('unifiedBandingForm')?.addEventListener('submit', Handlers.submitUnified);
+                    document.getElementById('unifiedBandingForm')?.addEventListener('input', ()=>{
+                        state.unifiedResult=null;
+                        document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
+                    });
                     document.getElementById('add-component-btn')?.addEventListener('click', Handlers.addMixtureComponent);
                     document.getElementById('calculate-mixture-btn')?.addEventListener('click', Handlers.calcMixture);
                     document.getElementById('save-history-btn')?.addEventListener('click', () => {
@@ -1731,7 +1740,8 @@
                     document.getElementById('check-compatibility-btn')?.addEventListener('click', Handlers.checkCompatibility);
                     
                     document.getElementById('reset-eval-btn')?.addEventListener('click', () => {
-                        document.getElementById('unifiedBandingForm')?.reset(); 
+                        document.getElementById('unifiedBandingForm')?.reset();
+                        document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
                         state.unifiedResult = null;
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         UI.showStep(1);
@@ -1740,6 +1750,9 @@
                     document.getElementById('clear-form-btn')?.addEventListener('click', () => {
                         Storage.clear();
                         document.getElementById('unifiedBandingForm')?.reset();
+                        document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
+                        state.unifiedResult = null;
+                        document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         UI.showStep(1);
                         UI.showToast("Datos locales limpiados", "success");
                     });
