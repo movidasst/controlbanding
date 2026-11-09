@@ -1266,7 +1266,7 @@
                         state.mixResult=null;state.unifiedResult=null;state.editingId=null;
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         state.restoring=false;
-                        UI.showStep(Math.max(1,Math.min(5,Number(data?.step)||1)));
+                        UI.showStep(Math.max(1,Math.min(snapshot?.fields?.product_type==='mezcla'?2:5,Number(data?.step)||1)));
                         UI.showToast('Borrador y componentes restaurados. Recalcula la mezcla antes de avanzar.','success');
                     }catch(e){UI.showToast('No se pudo recuperar el borrador: '+e.message,'error');}
                     finally{state.restoring=false;}
@@ -1738,6 +1738,17 @@
                 init() {
                     UI.init();
                     document.getElementById('import-legacy-history')?.addEventListener('click',()=>HistoryManager.importLegacy());
+                    document.getElementById('export-history-btn')?.addEventListener('click',()=>HistoryManager.exportAll());
+                    document.getElementById('import-history-btn')?.addEventListener('click',()=>document.getElementById('import-history-file')?.click());
+                    document.getElementById('import-history-file')?.addEventListener('change',async e=>{
+                        await HistoryManager.importJSON(e.target.files?.[0]);
+                        e.target.value='';
+                    });
+                    document.getElementById('save-draft-btn')?.addEventListener('click',()=>{
+                        Storage.save();
+                        UI.showToast('Borrador guardado con sus componentes y fuentes.','success');
+                    });
+                    document.getElementById('restore-draft-btn')?.addEventListener('click',()=>Storage.load());
                     document.getElementById('history-table-body')?.addEventListener('click',e=>{
                         const b=e.target.closest('button[data-hist-action]');
                         if(!b)return;
@@ -1754,6 +1765,12 @@
                         document.getElementById('mix_banda_inh').value='';
                         document.getElementById('mix_score_der').value='';
                         document.getElementById('mixture-result')?.classList.add('hidden');
+                        const pureH=document.getElementById('h_phrases');
+                        if(pureH)pureH.required=!mixed;
+                        const pureName=document.getElementById('chemical_name_pura');
+                        if(pureName)pureName.required=!mixed;
+                        const mixName=document.getElementById('chemical_name_mezcla');
+                        if(mixName)mixName.required=mixed;
                     };
                     document.querySelectorAll('input[name="product_type"]').forEach(r=>r.addEventListener('change',changeProductMode));
                     changeProductMode();
@@ -1819,10 +1836,18 @@
                     });
 
                     document.getElementById('unifiedBandingForm')?.addEventListener('submit', Handlers.submitUnified);
-                    document.getElementById('unifiedBandingForm')?.addEventListener('input', ()=>{
+                    const evalForm=document.getElementById('unifiedBandingForm');
+                    let autosaveTimer;
+                    const markChanged=()=>{
+                        if(state.restoring)return;
                         state.unifiedResult=null;
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
-                    });
+                        clearTimeout(autosaveTimer);
+                        autosaveTimer=setTimeout(()=>Storage.save(),450);
+                    };
+                    evalForm?.addEventListener('input',markChanged);
+                    evalForm?.addEventListener('change',markChanged);
+                    window.addEventListener('pagehide',()=>{clearTimeout(autosaveTimer);Storage.save();});
                     document.getElementById('add-component-btn')?.addEventListener('click', Handlers.addMixtureComponent);
                     document.getElementById('calculate-mixture-btn')?.addEventListener('click', Handlers.calcMixture);
                     document.getElementById('save-history-btn')?.addEventListener('click', () => {
@@ -1837,8 +1862,11 @@
                         document.getElementById('unifiedBandingForm')?.reset();
                         document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
                         state.unifiedResult = null;
+                        state.editingId=null;state.mixResult=null;
+                        document.getElementById('mixture-components')?.replaceChildren();
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         UI.showStep(1);
+                        Storage.clear();
                     });
 
                     document.getElementById('clear-form-btn')?.addEventListener('click', () => {
@@ -1846,9 +1874,12 @@
                         document.getElementById('unifiedBandingForm')?.reset();
                         document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
                         state.unifiedResult = null;
+                        state.editingId=null;state.mixResult=null;
+                        document.getElementById('mixture-components')?.replaceChildren();
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         UI.showStep(1);
-                        UI.showToast("Datos locales limpiados", "success");
+                        Storage.clear();
+                        UI.showToast("Borrador y formulario limpiados (el historial sigue guardado).", "success");
                     });
 
                     document.getElementById('verify-report-btn')?.addEventListener('click', () => {
