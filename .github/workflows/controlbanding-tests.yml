@@ -1,7 +1,7 @@
-name: Control Banding – pruebas de fases 1 y 2
+name: Control Banding – pruebas de fases 1 a 4
 on:
   push:
-    branches: [main, feat/fases-1-2-seguridad-metodologia]
+    branches: [main, feat/fases-3-4-evidencia-accesibilidad]
   pull_request:
     branches: [main]
 permissions:
@@ -18,7 +18,14 @@ jobs:
         run: |
           node --check methodology.js
           node --check auth-gate.js
+          node --check evaluation-evidence.js
+          node --check report-pdf.js
+          node --check accessibility.js
       - name: Regresiones de metodología
         run: node tests/methodology.test.cjs
+      - name: Evidencia y autenticidad de la importación
+        run: node tests/evidence.test.cjs
+      - name: Informe multipágina y trazabilidad
+        run: node tests/report.test.cjs
       - name: Integración y sintaxis HTML
         run: node tests/integration.test.cjs
