@@ -287,6 +287,8 @@
                 <form id="unifiedBandingForm">
                     <!-- Step 1: Context Data -->
                     <div id="step-1" class="wizard-step active">
+                        <h3 class="text-xl font-extrabold text-brand-dark mb-3">Paso 1. Contexto del trabajo</h3>
+                        <p class="text-sm text-slate-600 mb-6">Registra los datos reales del proceso, del lugar de trabajo y de la persona que realiza la evaluación.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label class="block text-sm font-bold text-brand-dark mb-2">Empresa</label><input type="text" name="companyName" class="input-field" placeholder="Nombre de la empresa" required></div>
                             <div><label class="block text-sm font-bold text-brand-dark mb-2">Evaluador</label><input type="text" id="evaluatorName" name="evaluatorName" class="input-field" placeholder="Su nombre" required></div>
@@ -331,6 +333,8 @@
                     
                     <!-- Step 2: Hazard Identification (Substance vs Mixture) -->
                     <div id="step-2" class="wizard-step">
+                        <h3 class="text-xl font-extrabold text-brand-dark mb-3">Paso 2. Identificación y ficha de seguridad</h3>
+                        <p class="text-sm text-slate-600 mb-5">Utiliza las frases H verificadas en las secciones 2 y 3 de la FDS. La consulta automática es una ayuda, no sustituye la ficha del producto.</p>
                         <div class="flex flex-col sm:flex-row gap-4 mb-8 bg-slate-100/50 p-2 rounded-xl w-fit mx-auto border border-slate-200">
                             <label class="flex-1 cursor-pointer product-radio-label">
                                 <input type="radio" name="product_type" value="pura" class="peer sr-only" checked>
@@ -528,7 +532,7 @@
 
                         <!-- Expert Mode -->
                         <div class="mt-8 pt-4 border-t border-slate-200/60">
-                            <button type="button" id="toggle-expert-mode" class="text-sm font-bold text-brand-teal flex items-center gap-2 hover:text-brand-dark transition-colors">
+                            <button type="button" id="toggle-expert-mode" aria-expanded="false" aria-controls="expert-mode-fields" class="text-sm font-bold text-brand-teal flex items-center gap-2 hover:text-brand-dark transition-colors">
                                 <i data-lucide="sliders-horizontal" class="w-5 h-5"></i> Ajustes de Entorno Físico (Opcional)
                             </button>
                             <div id="expert-mode-fields" class="hidden mt-4 p-5 bg-slate-50 border border-slate-200/80 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -866,7 +870,7 @@
             <div id="compatibilidad" class="tab-content">
                 <div class="mb-10">
                     <h2 class="text-3xl font-extrabold text-brand-dark">Compatibilidad de Almacenamiento</h2>
-                    <p class="text-slate-500 mt-2 font-medium">Determine si dos productos químicos pueden almacenarse juntos basándose en sus frases H o clasificación SGA.</p>
+                    <p class="text-slate-500 mt-2 font-medium">Identifica alertas preliminares a partir de frases H. Un resultado sin alertas <strong>no demuestra compatibilidad</strong>: consulta las secciones 7 y 10 de ambas FDS.</p>
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -944,12 +948,13 @@
                     <div class="bg-brand-dark/5 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-8 text-brand-dark">
                         <i data-lucide="file-check-2" class="w-12 h-12"></i>
                     </div>
-                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Consultar Registro Local del Informe</h2>
+                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Consultar código registrado en este navegador</h2>
                     <p class="text-slate-500 mb-10 font-medium text-lg leading-relaxed">Introduzca el identificador de un informe generado en este navegador. Esta consulta local no demuestra autenticidad ni integridad documental.</p>
                     
                     <div class="flex max-w-lg mx-auto shadow-xl rounded-2xl overflow-hidden border border-slate-200 focus-within:ring-4 focus-within:ring-brand-teal/30 focus-within:border-brand-teal transition-all">
-                        <input type="text" id="report-code-input" class="flex-1 border-0 bg-white/90 px-6 py-4 text-lg font-medium text-brand-dark focus:outline-none" placeholder="CB-...">
-                        <button id="verify-report-btn" class="bg-brand-dark hover:bg-brand-teal text-white px-8 py-4 font-extrabold transition-colors">Verificar</button>
+                        <label for="report-code-input" class="sr-only">Identificador del informe local</label>
+                        <input type="text" id="report-code-input" maxlength="100" class="flex-1 min-w-0 border-0 bg-white/90 px-3 sm:px-6 py-4 text-base sm:text-lg font-medium text-brand-dark focus:outline-none" placeholder="EV-...">
+                        <button type="button" id="verify-report-btn" class="bg-brand-dark hover:bg-brand-teal text-white px-4 sm:px-8 py-4 font-extrabold transition-colors">Consultar</button>
                     </div>
                     <div id="verification-result" class="mt-12"></div>
                  </div>
@@ -1798,7 +1803,9 @@
                     });
 
                     document.getElementById('toggle-expert-mode')?.addEventListener('click', () => {
-                        document.getElementById('expert-mode-fields')?.classList.toggle('hidden');
+                        const fields=document.getElementById('expert-mode-fields');
+                        fields?.classList.toggle('hidden');
+                        document.getElementById('toggle-expert-mode')?.setAttribute('aria-expanded',String(!fields?.classList.contains('hidden')));
                     });
 
                     document.getElementById('estado_fisico')?.addEventListener('change', e => {
