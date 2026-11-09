@@ -55,7 +55,7 @@
   }
   function assignLabels(){
     let id=0;
-    for(const input of all('#unifiedBandingForm input,#unifiedBandingForm textarea,#unifiedBandingForm select')){
+    for(const input of all('#unifiedBandingForm input,#unifiedBandingForm textarea,#unifiedBandingForm select,#compatibilidad input,#sustitucion input,#verificar input')){
       if(input.type==='hidden'||input.type==='radio'||input.type==='checkbox')continue;
       if(input.labels?.length||input.hasAttribute('aria-label'))continue;
       const parent=input.parentElement;
@@ -71,7 +71,10 @@
     const nav=document.getElementById('tab-navigation');
     if(nav){
       nav.setAttribute('role','tablist');
-      nav.setAttribute('aria-orientation','horizontal');
+      const updateOrientation=()=>nav.setAttribute('aria-orientation',
+        window.matchMedia('(max-width: 767px)').matches?'horizontal':'vertical');
+      updateOrientation();
+      window.addEventListener('resize',updateOrientation);
       nav.addEventListener('keydown',event=>{
         const target=event.target.closest('.tab');
         if(!target)return;
