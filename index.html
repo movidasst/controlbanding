@@ -162,7 +162,7 @@
             <img class="gate-logo" src="https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp" alt="La Movida de SST+">
             <h1 id="gate-heading">Control Banding</h1>
             <p class="gate-lede">Ingresa con las mismas credenciales de integrante de La Movida de SST+. No necesitas una nueva cuenta.</p>
-            <form id="member-login-form" autocomplete="on">
+            <form id="member-login-form" method="post" action="#" autocomplete="on" onsubmit="return false">
                 <label for="member-documento">Cédula o documento de identidad</label>
                 <input id="member-documento" name="documento" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="32" autocomplete="username" placeholder="Solo números" required>
                 <label for="member-code">Código de integrante</label>
@@ -1957,7 +1957,19 @@
 
         // AuthGate se ejecuta desde un script independiente y necesita esta referencia.
         window.App = App;
-        document.addEventListener('DOMContentLoaded', AuthGate.boot);
+        // Los scripts con defer se ejecutan DESPUÉS de este script inline.
+        // Resolver AuthGate solo cuando se dispara DOMContentLoaded; evita ReferenceError.
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.AuthGate || typeof window.AuthGate.boot !== 'function') {
+                const alert = document.getElementById('gate-error');
+                if (alert) {
+                    alert.hidden = false;
+                    alert.textContent = 'No pudo cargarse el módulo de acceso. Comprueba tu conexión y vuelve a abrir la aplicación.';
+                }
+                return;
+            }
+            window.AuthGate.boot();
+        });
     </script>
 </body>
 </html>

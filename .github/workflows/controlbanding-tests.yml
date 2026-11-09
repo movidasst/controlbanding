@@ -27,5 +27,7 @@ jobs:
         run: node tests/evidence.test.cjs
       - name: Informe multipágina y trazabilidad
         run: node tests/report.test.cjs
+      - name: Inicio de sesión y orden real de carga de scripts
+        run: node tests/auth-boot.test.cjs
       - name: Integración y sintaxis HTML
         run: node tests/integration.test.cjs
