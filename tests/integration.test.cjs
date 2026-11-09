@@ -12,7 +12,7 @@ const expected=[
   'src="auth-gate.js"','src="methodology.js"','href="theme-2026.css"',
   'src="evaluation-evidence.js"','src="report-pdf.js"','src="accessibility.js"',
   'ControlBandingMethod.mixture(items)','ControlBandingMethod.compatibility(a.codes,b.codes)',
-  'AuthGate.ensureSession()','DOMContentLoaded\', AuthGate.boot',
+  'AuthGate.ensureSession()','DOMContentLoaded\', () => {','window.AuthGate.boot()',
   'id="fdSource"','id="fdRevision"','id="planAction"','id="planEvidence"',
   'id="save-draft-btn"','id="restore-draft-btn"','id="export-history-btn"',
   'id="import-history-btn"','id="wizard-errors"','id="main-content"',
