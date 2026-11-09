@@ -1,0 +1,24 @@
+name: Control Banding – pruebas de fases 1 y 2
+on:
+  push:
+    branches: [main, feat/fases-1-2-seguridad-metodologia]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxis de módulos
+        run: |
+          node --check methodology.js
+          node --check auth-gate.js
+      - name: Regresiones de metodología
+        run: node tests/methodology.test.cjs
+      - name: Integración y sintaxis HTML
+        run: node tests/integration.test.cjs

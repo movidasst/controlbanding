@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SST | Herramienta Avanzada de Control Banding</title>
     
+    <link rel="stylesheet" href="theme-2026.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="methodology.js" defer></script>
+    <script src="auth-gate.js" defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -147,7 +151,23 @@
     </style>
 <script defer src="https://www.movidasst.com/analytics.js?v=20261025-ga4com2"></script>
 </head>
-<body class="tech-grid relative min-h-screen flex flex-col">
+<body class="tech-grid relative min-h-screen flex flex-col auth-pending">
+    <section id="member-gate" aria-labelledby="gate-heading">
+        <div class="gate-card">
+            <img class="gate-logo" src="https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp" alt="La Movida de SST+">
+            <h1 id="gate-heading">Control Banding</h1>
+            <p class="gate-lede">Ingresa con las mismas credenciales de integrante de La Movida de SST+. No necesitas una nueva cuenta.</p>
+            <form id="member-login-form" autocomplete="on">
+                <label for="member-documento">Cédula o documento de identidad</label>
+                <input id="member-documento" name="documento" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="32" autocomplete="username" placeholder="Solo números" required>
+                <label for="member-code">Código de integrante</label>
+                <input id="member-code" name="codigo" type="password" minlength="4" maxlength="24" autocomplete="current-password" placeholder="Tu código de La Movida" required>
+                <p id="gate-error" class="gate-error" role="alert" hidden></p>
+                <button class="gate-button" type="submit"><span id="gate-submit-label">Ingresar a Control Banding</span></button>
+            </form>
+            <p class="gate-foot">¿Aún no eres integrante? <a href="https://registro.movidasst.com/" target="_blank" rel="noopener noreferrer">Regístrate gratuitamente</a><br><a href="https://www.movidasst.com/">Volver a La Movida</a></p>
+        </div>
+    </section>
 
     <!-- Luces Ambientales (Glow Background) -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
@@ -167,9 +187,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center gap-4">
-                    <img src="https://assets.poap.xyz/cec12a20-fefb-4199-9cc0-b1ece87fe44d.png" alt="Logo La Movida de SST" class="w-14 h-14 object-contain animate-float">
+                    <a class="m-brand-bar" href="https://www.movidasst.com/" aria-label="Volver a La Movida de SST+"><img src="https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp" alt="La Movida de SST+" class="m-logo"></a>
                     <div>
-                        <h1 class="font-extrabold text-2xl text-brand-dark leading-tight tracking-tight">La Movida de SST</h1>
+                        <h1 class="m-title">Control Banding</h1>
                         <p class="text-sm text-brand-teal font-medium tracking-wide">De la Reacción a la prevención</p>
                         <div class="md:hidden mt-1 inline-block bg-brand-teal/10 text-brand-dark text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-brand-teal/20">
                             Control Banding
@@ -185,6 +205,7 @@
                         <i data-lucide="book-open" class="w-4 h-4"></i> Guía de Uso
                     </button>
                 </div>
+                <div class="m-userbar"><span id="member-name" aria-label="Integrante autenticado"></span><button id="member-logout" class="m-logout" type="button">Cerrar sesión</button></div>
             </div>
         </div>
     </header>
@@ -232,10 +253,11 @@
                 <div class="mb-8 flex justify-between items-end">
                     <div>
                         <h2 class="text-3xl font-extrabold text-brand-dark">Evaluación Integral de Riesgos</h2>
-                        <p class="text-slate-500 mt-2 font-medium">Análisis simultáneo de peligrosidad Inhalatoria (COSHH) y Dérmica (RISKOFDERM).</p>
+                        <p class="text-slate-500 mt-2 font-medium">Cribado inhalatorio basado en COSHH Essentials y estimación dérmica orientativa. Los resultados requieren revisión profesional.</p>
                     </div>
                 </div>
                 
+                <div class="m-soft-note">Evaluación cualitativa orientativa basada en las tablas de <strong>COSHH Essentials (HSE)</strong> para sólidos y líquidos. No sustituye la ficha de datos de seguridad (FDS), la evaluación higiénica ni el criterio profesional. <a href="https://www.hse.gov.uk/pubns/guidance/coshh-technical-basis.pdf" target="_blank" rel="noopener noreferrer">Consultar fundamento técnico del HSE</a>.</div>
                 <!-- Wizard Progress -->
                 <div class="mb-10 relative">
                     <div class="overflow-hidden h-3 mb-4 text-xs flex rounded-full bg-slate-200/50">
@@ -349,7 +371,7 @@
                         <div id="mode-mezcla" class="hidden space-y-6 animate-slideUp">
                             <div class="glass-card !border-brand-dark/30 p-5 rounded-2xl flex gap-4 text-brand-dark text-sm items-start">
                                 <i data-lucide="settings" class="w-6 h-6 flex-shrink-0 text-brand-dark mt-0.5"></i>
-                                <p class="font-medium leading-relaxed">Agregue los componentes peligrosos indicados en la Sección 3 de la FDS y su concentración. El sistema deducirá la banda inhalatoria y la severidad dérmica basándose en los umbrales GHS.</p>
+                                <p class="font-medium leading-relaxed">Agregue componentes de la sección 3 de la FDS con su concentración y frases H verificadas. La herramienta realiza un cribado orientativo según criterios COSHH del HSE; <strong>no clasifica legalmente la mezcla según el SGA</strong> ni reemplaza la clasificación de la FDS del producto final.</p>
                             </div>
                             
                             <div>
@@ -418,7 +440,7 @@
                                     <select id="estado_fisico" name="estado_fisico" class="input-field">
                                         <option value="solido">Sólido / Polvo</option>
                                         <option value="liquido" selected>Líquido</option>
-                                        <option value="gas">Gas</option>
+                                        <option value="gas" disabled>Gas (fuera del alcance COSHH Essentials)</option>
                                     </select>
                                 </div>
                                 <div id="propiedad_solido" class="hidden">
@@ -725,9 +747,12 @@
             <div id="historial" class="tab-content">
                 <div class="mb-8">
                     <h2 class="text-3xl font-extrabold text-brand-dark">Mis Evaluaciones</h2>
-                    <p class="text-slate-500 mt-2 font-medium">Gestione localmente las evaluaciones previas. Los datos se almacenan de forma segura en su navegador.</p>
+                    <p class="text-slate-500 mt-2 font-medium">Consulta evaluaciones guardadas localmente en este dispositivo. No hay sincronización ni cifrado del historial: evita almacenar datos sensibles en equipos compartidos.</p>
                 </div>
                 
+                <div class="m-soft-note m-amber-note" id="legacy-history-note" hidden>Si utilizaste esta versión antes del inicio de sesión, puedes importar tus evaluaciones antiguas. Los cálculos previos no se actualizan automáticamente; debes reevaluar su vigencia.
+                    <button id="import-legacy-history" type="button" class="m-logout ml-3">Importar historial antiguo</button>
+                </div>
                 <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm whitespace-nowrap">
@@ -867,7 +892,7 @@
                     
                     <div class="bg-brand-yellow/10 border-l-4 border-brand-yellow p-4 rounded-r-xl mt-6">
                         <p class="font-bold text-brand-dark m-0">Sobre las Mezclas:</p>
-                        <p class="text-sm mt-1 mb-0">La calculadora utiliza las lógicas de corte del SGA. Por ejemplo, si un componente es corrosivo (H314) y está en la mezcla a >5%, la mezcla asume el nivel Muy Alto dérmico.</p>
+                        <p class="text-sm mt-1 mb-0">Las mezclas se examinan mediante criterios de selección de bandas COSHH; no son una clasificación oficial SGA. Consulte la FDS del producto final y valide las características de cada componente.</p>
                     </div>
                 </div>
             </div>
@@ -878,8 +903,8 @@
                     <div class="bg-brand-dark/5 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-8 text-brand-dark">
                         <i data-lucide="file-check-2" class="w-12 h-12"></i>
                     </div>
-                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Verificar Autenticidad de Informe</h2>
-                    <p class="text-slate-500 mb-10 font-medium text-lg leading-relaxed">Introduzca el código único del PDF (Ej: CB-172470218) para validar que se generó en esta máquina sin alteraciones.</p>
+                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Consultar Registro Local del Informe</h2>
+                    <p class="text-slate-500 mb-10 font-medium text-lg leading-relaxed">Introduzca el identificador de un informe generado en este navegador. Esta consulta local no demuestra autenticidad ni integridad documental.</p>
                     
                     <div class="flex max-w-lg mx-auto shadow-xl rounded-2xl overflow-hidden border border-slate-200 focus-within:ring-4 focus-within:ring-brand-teal/30 focus-within:border-brand-teal transition-all">
                         <input type="text" id="report-code-input" class="flex-1 border-0 bg-white/90 px-6 py-4 text-lg font-medium text-brand-dark focus:outline-none" placeholder="CB-...">
@@ -895,11 +920,11 @@
                     <h2 class="text-3xl font-extrabold">Fundamentos Científicos</h2>
                     <p class="text-lg font-medium text-slate-600">Este SaaS cruza las metodologías cualitativas más robustas para pymes.</p>
                     
-                    <h3 class="text-2xl font-bold mt-8">Inhalatorio: COSHH Essentials (UK) Modificado</h3>
-                    <p>Agrupa el riesgo tóxico en 5 bandas (A-E) vía Frases H. Modula la exposición cruzando propiedades termodinámicas (Punto de Ebullición) o mecánicas (Polvo) frente a la escala de la operación (g, Kg, Ton). Hemos agregado modificadores energéticos y de volumen de recinto para mayor exactitud conservadora.</p>
+                    <h3 class="text-2xl font-bold mt-8">Inhalatorio: COSHH Essentials (HSE)</h3>
+                    <p>Agrupa las frases H para la salud en bandas A–E y aplica las tablas de potencial de exposición (cantidad y volatilidad o pulverulencia), con niveles de control de la tabla técnica del HSE. No se aplica a gases. Los datos del proceso y del entorno se conservan para contextualizar la evaluación, pero no modifican arbitrariamente la banda COSHH.</p>
 
-                    <h3 class="text-2xl font-bold mt-8">Dérmico: RISKOFDERM (UE)</h3>
-                    <p>Transforma frases H cutáneas específicas (H314, H317, H350) en un <i>Hazard Score</i> intrínseco (Bajo a Extremo). Lo cruza con unidades de Operación de Exposición Dérmica (DEO) empíricamente estudiadas para arrojar una criticidad del 1 al 10.</p>
+                    <h3 class="text-2xl font-bold mt-8">Dérmico: estimación orientativa de prioridad</h3>
+                    <p>Cruza peligros cutáneos de la FDS y tipos de tarea para ofrecer una prioridad cualitativa de 1 a 10. Esta simplificación no es una implementación validada de RISKOFDERM y no certifica exposición segura ni aceptación del riesgo.</p>
                 </div>
             </div>
             
@@ -921,13 +946,8 @@
                     'H220': 'Gas ext. inflamable.', 'H224': 'Líquido ext. inflamable.', 'H225': 'Líquido muy inflamable.', 'H226': 'Líquidos inflamables.', 'H272': 'Comburente.', 
                     'H300': 'Mortal ingestión.', 'H301': 'Tóxico ingestión.', 'H302': 'Nocivo ingestión.', 'H310': 'Mortal contacto piel.', 'H311': 'Tóxico contacto piel.', 'H312': 'Nocivo contacto piel.', 'H314': 'Quemaduras graves piel.', 'H315': 'Irritación cutánea.', 'H317': 'Alergia piel.', 'H318': 'Lesiones oculares.', 'H319': 'Irritación ocular.', 'H330': 'Mortal inhalación.', 'H331': 'Tóxico inhalación.', 'H332': 'Nocivo inhalación.', 'H334': 'Asma inhalación.', 'H335': 'Irrita vías resp.', 'H336': 'Somnolencia.', 'H340': 'Defectos genéticos.', 'H341': 'Sosp. defectos genéticos.', 'H350': 'Provoca cáncer.', 'H351': 'Sosp. cáncer.', 'H360': 'Perjudica fertilidad/feto.', 'H361': 'Sosp. perjudica fertilidad.', 'H370': 'Daños órganos.', 'H372': 'Daños órganos repetida.', 'H373': 'Puede dañar órganos.'
                 },
-                HAZARD_BANDS: { 
-                    'H316':'A','H320':'A','H336':'A','H335':'A', 
-                    'H302':'B','H312':'B','H332':'B','H315':'B','H319':'B', 
-                    'H301':'C','H311':'C','H331':'C','H314':'C','H318':'C','H317':'C','H371':'C','H373':'C', 
-                    'H330':'D','H300':'D','H310':'D','H334':'D','H341':'D','H351':'D','H361':'D','H370':'D','H372':'D', 
-                    'H340':'E','H350':'E','H360':'E' 
-                },
+                // La fuente única y vigente de frases H es methodology.js.
+                HAZARD_BANDS: null,
                 DERMAL_HAZARDS: {
                     'H350': 5, 'H340': 5, 
                     'H314': 4, 'H317': 4, 'H310': 4,
@@ -954,8 +974,12 @@
                 currentStep: 1,
                 wizardTotalSteps: 5,
                 apiCache: {},
-                unifiedResult: null // Holds both inhalatorio and dermico
+                unifiedResult: null, mixResult: null // La mezcla exige validación antes de continuar
             };
+
+            function escapeHTML(value) {
+                return String(value ?? '').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+            }
 
             // --- API PUBCHEM ---
             const ApiService = {
@@ -1015,55 +1039,17 @@
             const Calculator = {
                 // Inhalatorio Core
                 getHighestBand(phrases) {
-                    if(!phrases || phrases.length===0) return 'A';
-                    let highest = 'A';
-                    const order = ['A','B','C','D','E'];
-                    phrases.forEach(p => {
-                        const code = p.match(/H\d{3}/)?.[0];
-                        if (code && CONSTANTS.HAZARD_BANDS[code]) {
-                            const b = CONSTANTS.HAZARD_BANDS[code];
-                            if(order.indexOf(b) > order.indexOf(highest)) highest = b;
-                        }
-                    });
-                    return highest;
+                    return ControlBandingMethod.band(phrases);
                 },
                 getExposureBand(estado, propiedad, proceso, duracion, cantidad, modifiers) {
-                    const propMap = { 'baja': 10, 'media': 50, 'alta': 200 };
-                    const procMap = [0, 10, 50, 50, 100, 200];
-                    const cantMap = { 'pequena': 0.5, 'mediana': 1.0, 'grande': 2.0 };
-
-                    let exp = (propMap[propiedad] || 50) + (procMap[proceso] || 50);
-                    exp *= duracion * (cantMap[cantidad] || 1.0);
-                    
-                    if(modifiers) {
-                        exp *= (modifiers.vol * modifiers.vent * modifiers.temp);
-                    }
-                    if (exp < 50) return 1;
-                    if (exp <= 250) return 2;
-                    if (exp <= 1000) return 3;
-                    return 4;
+                    // Tablas HSE: cantidad x pulverulencia/volatilidad. No inventar ajustes numéricos.
+                    return ControlBandingMethod.exposure(estado, propiedad, cantidad);
                 },
-                getControlLevel(peligro, exposicion, estado, isCmr) {
-                    if (isCmr || peligro === 'E') return 4;
-                    const map = {'A':0, 'B':1, 'C':2, 'D':3};
-                    const mat = {
-                        solido:  [ [1, 1, 2, 3], [1, 2, 3, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        liquido: [ [1, 1, 2, 2], [1, 2, 2, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        gas:     [ [1, 2, 3, 4], [2, 3, 4, 4], [3, 4, 4, 4], [4, 4, 4, 4] ]
-                    };
-                    return mat[estado]?.[map[peligro]]?.[exposicion - 1] ?? 1;
+                getControlLevel(peligro, exposicion, estado, isCmr, cantidad, propiedad) {
+                    return ControlBandingMethod.control(peligro, exposicion, estado, cantidad, propiedad, isCmr);
                 },
-                
-                // Dérmico Core
                 getDermalHazardScore(phrases) {
-                    let score = 1;
-                    phrases.forEach(p => {
-                        const code = p.match(/H\d{3}/)?.[0];
-                        if (code && CONSTANTS.DERMAL_HAZARDS[code]) {
-                            if(CONSTANTS.DERMAL_HAZARDS[code] > score) score = CONSTANTS.DERMAL_HAZARDS[code];
-                        }
-                    });
-                    return score;
+                    return ControlBandingMethod.dermal(phrases);
                 },
                 getDermalExposureScore(task) {
                     const map = {
@@ -1083,7 +1069,7 @@
 
             // --- HISTORY MANAGER ---
             const HistoryManager = {
-                key: 'sst_evaluations_history',
+                get key() { return 'sst_evaluations_history_' + AuthGate.userId(); },
                 save(evaluation) {
                     const hist = this.getAll();
                     evaluation.id = `EV-${Date.now()}`;
@@ -1093,7 +1079,19 @@
                     this.renderList();
                     UI.showToast("Evaluación guardada en Historial", "success");
                 },
-                getAll() { return JSON.parse(localStorage.getItem(this.key)) || []; },
+                getAll() { try { const items=JSON.parse(localStorage.getItem(this.key)); return Array.isArray(items)?items:[]; } catch { return []; } },
+                importLegacy() {
+                    let old=[];
+                    try {old=JSON.parse(localStorage.getItem('sst_evaluations_history')||'[]');}catch{}
+                    if(!Array.isArray(old)||!old.length)return UI.showToast('No hay historial anterior para importar.','error');
+                    if(!window.confirm('Vas a asociar el historial antiguo de este navegador con tu integrante. Confirma solo si esas evaluaciones son tuyas. Los resultados previos deben reevaluarse.'))return;
+                    const current=this.getAll(),ids=new Set(current.map(e=>String(e.id)));
+                    const clean=old.filter(e=>e&&typeof e==='object'&&e.inhalatorio?.name&&e.context&&e.dermico&&typeof e.id==='string')
+                        .filter(e=>!ids.has(String(e.id))).map(e=>({...e,legacy_methodology:true}));
+                    localStorage.setItem(this.key,JSON.stringify([...current,...clean]));
+                    this.renderList();
+                    UI.showToast(clean.length+' evaluaciones antiguas importadas (requieren revisión).','success');
+                },
                 delete(id) {
                     const hist = this.getAll().filter(e => e.id !== id);
                     localStorage.setItem(this.key, JSON.stringify(hist));
@@ -1104,6 +1102,9 @@
                     const hist = this.getAll();
                     const evalData = hist.find(e => e.id === id);
                     if(evalData) {
+                        if(evalData.legacy_methodology || evalData.context?.metodo!=='COSHH HSE 2019'){
+                            UI.showToast('Evaluación histórica con cálculo anterior: no la utilices sin reevaluación.','error');
+                        }
                         UI.changeTab('evaluacion_unificada');
                         state.unifiedResult = evalData;
                         UI.renderUnifiedDashboard();
@@ -1120,6 +1121,8 @@
                     if (!tbody || !empty) return;
 
                     const data = this.getAll();
+                    const legacy=document.getElementById('legacy-history-note');
+                    if(legacy)legacy.hidden=!localStorage.getItem('sst_evaluations_history');
                     if(data.length === 0) {
                         tbody.innerHTML = '';
                         empty.classList.remove('hidden');
@@ -1129,18 +1132,18 @@
                     
                     tbody.innerHTML = data.map(d => `
                         <tr class="hover:bg-slate-50 transition-colors group">
-                            <td class="px-6 py-4 text-slate-500">${new Date(d.timestamp).toLocaleDateString()}</td>
-                            <td class="px-6 py-4 font-bold text-brand-dark">${d.inhalatorio.name}</td>
-                            <td class="px-6 py-4 text-slate-500">${d.context.process}</td>
+                            <td class="px-6 py-4 text-slate-500">${Number.isFinite(Date.parse(d.timestamp))?new Date(d.timestamp).toLocaleDateString():'Sin fecha'} ${d.legacy_methodology?'<small class="text-amber-800">(antigua)</small>':''}</td>
+                            <td class="px-6 py-4 font-bold text-brand-dark">${escapeHTML(d.inhalatorio.name)}</td>
+                            <td class="px-6 py-4 text-slate-500">${escapeHTML(d.context.process)}</td>
                             <td class="px-6 py-4 text-center">
                                 <span class="bg-slate-100 text-brand-teal px-2 py-1 rounded font-black text-xs">Banda ${d.inhalatorio.band} (Nivel ${d.inhalatorio.controlReq})</span>
                             </td>
                             <td class="px-6 py-4 text-center">
                                 <span class="bg-slate-100 text-brand-dark px-2 py-1 rounded font-black text-xs">Score ${d.dermico.riskScore}/10</span>
                             </td>
-                            <td class="px-6 py-4 text-center opacity-0 group-hover:opacity-100 transition-opacity flex justify-center gap-2">
-                                <button onclick="App.History.loadToDashboard('${d.id}')" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
-                                <button onclick="App.History.delete('${d.id}')" class="text-red-400 hover:text-red-600" title="Eliminar"><i data-lucide="trash" class="w-5 h-5"></i></button>
+                            <td class="px-6 py-4 text-center opacity-100 flex justify-center gap-2">
+                                <button type="button" data-hist-action="load" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                <button type="button" data-hist-action="delete" data-id="${escapeHTML(d.id)}" class="text-red-600 hover:text-red-800" title="Eliminar"><i data-lucide="trash" class="w-5 h-5"></i></button>
                             </td>
                         </tr>
                     `).join('');
@@ -1159,10 +1162,10 @@
                     const is_nano = document.getElementById('is_nano');
                     if (is_cmr) data.is_cmr = is_cmr.checked;
                     if (is_nano) data.is_nano = is_nano.checked;
-                    localStorage.setItem('sst_draft', JSON.stringify(data));
+                    localStorage.setItem('sst_draft_' + AuthGate.userId(), JSON.stringify(data));
                 },
                 load() {
-                    const data = JSON.parse(localStorage.getItem('sst_draft'));
+                    const data = JSON.parse(localStorage.getItem('sst_draft_' + AuthGate.userId()));
                     if(!data) return;
                     Object.keys(data).forEach(k => {
                         const el = document.getElementsByName(k)[0];
@@ -1173,9 +1176,10 @@
                     });
                     const estadoFisico = document.getElementById('estado_fisico');
                     if (estadoFisico) estadoFisico.dispatchEvent(new Event('change'));
+                     document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
                 },
                 clear() {
-                    localStorage.removeItem('sst_draft');
+                    localStorage.removeItem('sst_draft_' + AuthGate.userId());
                 }
             };
 
@@ -1184,7 +1188,7 @@
                 init() {
                     // Solo inicializar cosas básicas y chequear persistencia.
                     const prompt = document.getElementById('session-restore-prompt');
-                    if(prompt && localStorage.getItem('sst_draft')) {
+                    if(prompt && localStorage.getItem('sst_draft_' + AuthGate.userId())) {
                         prompt.classList.remove('hidden');
                         document.getElementById('restore-yes')?.addEventListener('click', () => {
                             Storage.load();
@@ -1223,7 +1227,7 @@
                         if (info) {
                             info.innerHTML = `
                                 <div class="text-center w-full">
-                                    <h4 class="font-extrabold text-2xl text-brand-dark mb-4">${state.unifiedResult.inhalatorio.name}</h4>
+                                    <h4 class="font-extrabold text-2xl text-brand-dark mb-4">${escapeHTML(state.unifiedResult.inhalatorio.name)}</h4>
                                     <p class="text-slate-500 font-medium mb-2 uppercase tracking-widest text-xs">Nivel de Peligro Base</p>
                                     <div class="mt-2 inline-flex items-center justify-center bg-brand-teal text-white px-8 py-3 rounded-full font-black text-3xl shadow-lg shadow-brand-teal/30">
                                         Banda ${state.unifiedResult.inhalatorio.band}
@@ -1240,6 +1244,17 @@
                     if(step > state.currentStep) {
                         const currentDiv = document.getElementById(`step-${state.currentStep}`);
                         if (currentDiv) {
+                            if(state.currentStep===2) {
+                                const isMix=document.querySelector('input[name="product_type"]:checked')?.value==='mezcla';
+                                if(isMix && !state.mixResult) {
+                                    this.showToast('Calcule una mezcla con componentes y frases H válidas antes de avanzar.', 'error');
+                                    return false;
+                                }
+                                if(!isMix) {
+                                    try { ControlBandingMethod.codes(document.getElementById('h_phrases')?.value,true); }
+                                    catch(err) { this.showToast(err.message,'error'); return false; }
+                                }
+                            }
                             const reqs = currentDiv.querySelectorAll('[required]');
                             for(let r of reqs) {
                                 if(!r.value && !r.closest('.hidden')) {
@@ -1267,27 +1282,19 @@
                     Storage.save();
                     return true;
                 },
-                renderMatrix(estado, peligro, exp) {
-                    const matrices = {
-                        solido:  [ [1, 1, 2, 3], [1, 2, 3, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        liquido: [ [1, 1, 2, 2], [1, 2, 2, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        gas:     [ [1, 2, 3, 4], [2, 3, 4, 4], [3, 4, 4, 4], [4, 4, 4, 4] ]
-                    };
-                    const mat = matrices[estado] || matrices.liquido;
-                    const b = ['A', 'B', 'C', 'D'];
-                    const bIdx = b.indexOf(peligro);
-                    const eIdx = exp - 1;
-
-                    let html = `<thead><tr><th class="w-16">Peligro</th><th>EP1</th><th>EP2</th><th>EP3</th><th>EP4</th></tr></thead><tbody>`;
-                    mat.forEach((row, i) => {
-                        html += `<tr><th>${b[i]}</th>`;
-                        row.forEach((cell, j) => {
-                            const isHighlight = (i === bIdx && j === eIdx) && peligro !== 'E';
-                            html += `<td class="matrix-cell-${cell} ${isHighlight ? 'highlight-matrix' : ''}">${cell}</td>`;
-                        });
-                        html += `</tr>`;
-                    });
-                    return html + `</tbody>`;
+                renderMatrix(estado, peligro, exp, cantidad, propiedad) {
+                    const matriz = ControlBandingMethod.CONTROL[estado];
+                    if(!matriz) return '<tbody><tr><td>Fuera del alcance de COSHH.</td></tr></tbody>';
+                    let html = '<thead><tr><th>Peligro</th><th>EP1</th><th>EP2</th><th>EP3</th><th>EP4</th></tr></thead><tbody>';
+                    for(const banda of ['A','B','C','D','E']) {
+                        html += '<tr><th>'+banda+'</th>';
+                        for(let i=1;i<=4;i++){
+                            const lvl=ControlBandingMethod.control(banda,i,estado,cantidad,propiedad);
+                            html += '<td class="matrix-cell-'+lvl+' '+(banda===peligro&&i===exp?'highlight-matrix':'')+'">'+lvl+'</td>';
+                        }
+                        html += '</tr>';
+                    }
+                    return html+'</tbody>';
                 },
                 renderUnifiedDashboard() {
                     if(!state.unifiedResult) return;
@@ -1308,7 +1315,7 @@
                     const residMap = {
                         1: {c: 'bg-red-100 text-red-700', t: 'Inaceptable'},
                         0: {c: 'bg-brand-yellow/20 text-yellow-700', t: 'Moderado'},
-                        '-1': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
+                        '-1': {c: 'bg-green-100 text-green-700', t: 'Por verificar'},
                         '-2': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
                         '-3': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
                     };
@@ -1332,7 +1339,7 @@
                     if(elDerScore) elDerScore.textContent = res.dermico.riskScore;
                     
                     let dCrit = {c: 'bg-red-100 text-red-700', t:'Inaceptable'};
-                    if(res.dermico.riskScore <=3) dCrit={c:'bg-green-100 text-green-700', t:'Aceptable'};
+                    if(res.dermico.riskScore <=3) dCrit={c:'bg-brand-teal/10 text-brand-teal', t:'Prioridad orientativa baja'};
                     else if(res.dermico.riskScore <=6) dCrit={c:'bg-brand-yellow/20 text-yellow-700', t:'Mejorar'};
                     
                     const elDerCrit = document.getElementById('res-der-crit');
@@ -1370,7 +1377,7 @@
                     }
                     
                     const matrixUnified = document.getElementById('riskMatrix-unified');
-                    if(matrixUnified) matrixUnified.innerHTML = this.renderMatrix(res.context.estado, res.inhalatorio.band, res.inhalatorio.exp);
+                    if(matrixUnified) matrixUnified.innerHTML = this.renderMatrix(res.context.estado, res.inhalatorio.band, res.inhalatorio.exp, res.context.cantidad, res.context.propiedad);
 
                     lucide.createIcons();
                 }
@@ -1378,89 +1385,60 @@
 
             const Handlers = {
                 addMixtureComponent() {
-                    const c = document.getElementById('mixture-components');
-                    if(!c) return;
-                    const d = document.createElement('div');
-                    d.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200';
-                    d.innerHTML = `
-                        <input type="text" class="input-field mix-cas !py-1.5 !text-sm flex-[2]" placeholder="CAS">
-                        <input type="number" class="input-field mix-conc !py-1.5 !text-sm flex-1" placeholder="%" min="0" max="100">
-                        <button type="button" class="text-slate-400 hover:text-red-500 p-1" onclick="this.parentElement.remove()"><i data-lucide="x" class="w-4 h-4"></i></button>
-                    `;
-                    c.appendChild(d);
-                    lucide.createIcons();
-
-                    const casInput = d.querySelector('.mix-cas');
-                    casInput.addEventListener('blur', async (e) => {
-                        const cas = e.target.value.trim();
-                        if(cas) {
-                            const data = await ApiService.getChemicalData(cas);
-                            if(data) {
-                                d.dataset.h = data.hPhrases ? data.hPhrases.join(',') : '';
-                                UI.showToast(`Identificado: ${data.name}`, 'success');
-                            } else {
-                                UI.showToast(`CAS no encontrado en BD.`, 'error');
-                            }
-                        }
+                    const c=document.getElementById('mixture-components');
+                    if(!c)return;
+                    const row=document.createElement('div');
+                    row.className='bg-slate-50 p-3 rounded-xl border border-slate-200';
+                    row.innerHTML=`
+                        <input type="text" class="input-field mix-cas !py-2 !text-sm" placeholder="CAS (opcional)" aria-label="CAS del componente">
+                        <input type="text" class="input-field mix-h !py-2 !text-sm" placeholder="Frases H: H315, H335" aria-label="Frases H de la FDS">
+                        <input type="number" class="input-field mix-conc !py-2 !text-sm" min="0.001" max="100" step="any" placeholder="Concentración %" aria-label="Concentración porcentual">
+                        <button type="button" class="mix-delete text-red-600 font-bold p-2" aria-label="Eliminar componente">✕</button>`;
+                    const invalidate=()=>{
+                        state.mixResult=null;
+                        document.getElementById('mix_banda_inh').value='';
+                        document.getElementById('mix_score_der').value='';
+                        document.getElementById('mixture-result').classList.add('hidden');
+                    };
+                    row.addEventListener('input',invalidate);
+                    row.querySelector('.mix-delete').addEventListener('click',()=>{row.remove();invalidate();});
+                    row.querySelector('.mix-cas').addEventListener('blur',async e=>{
+                        const cas=e.target.value.trim();if(!cas)return;
+                        const chemical=await ApiService.getChemicalData(cas);
+                        if(chemical?.hPhrases?.length){
+                            row.querySelector('.mix-h').value=chemical.hPhrases.join(', ');
+                            invalidate();
+                            UI.showToast('PubChem sugiere frases H. Confirme con la FDS.','info');
+                        }else UI.showToast('CAS sin frases H verificables. Ingrese los datos de la FDS.','error');
                     });
+                    c.appendChild(row);invalidate();
                 },
                 async calcMixture() {
-                    const rows = document.querySelectorAll('#mixture-components > div');
-                    if(rows.length===0) return UI.showToast("Añada componentes", "error");
-                    
-                    const btn = document.getElementById('calculate-mixture-btn');
-                    if(btn) btn.innerHTML = `<span class="loader border-t-white w-4 h-4 mr-2"></span> Calculando...`;
-                    
-                    let inhBands = [];
-                    let derScores = [];
-                    
-                    for(let r of rows) {
-                        const casInput = r.querySelector('.mix-cas');
-                        const concInput = r.querySelector('.mix-conc');
-                        const cas = casInput ? casInput.value : '';
-                        const conc = concInput ? parseFloat(concInput.value) : NaN;
-                        const h = r.dataset.h || "";
-                        
-                        if(cas && !isNaN(conc)) {
-                            const phArr = h.toUpperCase().split(',');
-                            
-                            // Inh
-                            const b = Calculator.getHighestBand(phArr);
-                            inhBands.push({band: b, conc});
-                            
-                            // Der
-                            const ds = Calculator.getDermalHazardScore(phArr);
-                            if((ds===5 && conc >=0.1) || (ds<5 && conc>=1)) {
-                                derScores.push(ds);
-                            }
-                        }
-                    }
-
-                    // Eval Inhalatoria Mezcla
-                    let finalB = 'A';
-                    for(let b of ['E','D','C','B']) {
-                        const t = {'E':0.1, 'D':1, 'C':10, 'B':20}[b];
-                        if(inhBands.some(x => x.band===b && x.conc >= t)) { finalB = b; break; }
-                    }
-
-                    // Eval Dérmica Mezcla
-                    const finalD = derScores.length > 0 ? Math.max(...derScores) : 1;
-
-                    const resInh = document.getElementById('mix-res-inh');
-                    const resDer = document.getElementById('mix-res-der');
-                    const resBox = document.getElementById('mixture-result');
-
-                    if(resInh) resInh.textContent = finalB;
-                    if(resDer) resDer.textContent = ['Nulo','Bajo','Moderado','Alto','Muy Alto','Extremo'][finalD];
-                    if(resBox) resBox.classList.remove('hidden');
-                    
-                    const casField = document.getElementById('cas_number');
-                    const hField = document.getElementById('h_phrases');
-                    if(casField) casField.value = 'Mezcla Evaluada';
-                    if(hField) hField.value = `Asignado por calculadora (Banda ${finalB})`;
-                    
-                    if(btn) btn.innerHTML = "Calcular Clasificación Global";
-                    UI.showToast("Peligro de mezcla asignado al formulario principal.", "success");
+                    const btn=document.getElementById('calculate-mixture-btn');
+                    if(btn)btn.disabled=true;
+                    try{
+                        const items=[...document.querySelectorAll('#mixture-components > div')].map(row=>({
+                            phrases:row.querySelector('.mix-h')?.value||'',
+                            concentration:row.querySelector('.mix-conc')?.value||''
+                        }));
+                        const result=ControlBandingMethod.mixture(items);
+                        state.mixResult=result;
+                        document.getElementById('mix_banda_inh').value=result.band;
+                        document.getElementById('mix_score_der').value=String(result.dermal);
+                        document.getElementById('mix-res-inh').textContent=result.band;
+                        document.getElementById('mix-res-der').textContent=['Nulo','Bajo','Moderado','Alto','Muy Alto','Extremo'][result.dermal];
+                        const box=document.getElementById('mixture-result');box.classList.remove('hidden');
+                        let note=document.getElementById('methodology-note');
+                        if(!note){note=document.createElement('p');note.id='methodology-note';note.className='m-soft-note m-amber-note';box.insertAdjacentElement('afterend',note);}
+                        note.textContent=result.notice+(result.requiresExpert?' H334: confirme umbrales y solicite revisión especializada.':'');
+                        UI.showToast('Cribado de mezcla calculado. Verifique la FDS.','success');
+                    }catch(err){
+                        state.mixResult=null;
+                        document.getElementById('mix_banda_inh').value='';
+                        document.getElementById('mix_score_der').value='';
+                        document.getElementById('mixture-result').classList.add('hidden');
+                        UI.showToast(err.message||'Composición incompleta o inválida.','error');
+                    }finally{if(btn)btn.disabled=false;}
                 },
 
                 async submitUnified(e) {
@@ -1472,24 +1450,27 @@
                     }
 
                     try {
+                        if(!await AuthGate.ensureSession())throw new Error('La sesión venció; ingresa nuevamente.');
                         const form = document.getElementById('unifiedBandingForm');
                         const fd = new FormData(form);
                         const data = Object.fromEntries(fd.entries());
                         const isPura = data.product_type === 'pura';
                         
                         let name = isPura ? data.chemical_name_pura : data.chemical_name_mezcla;
-                        let bandInh = 'A';
-                        let scoreDer = 1;
+                        let bandInh;
+                         let scoreDer;
 
-                        if(isPura) {
-                            const phArr = data.h_phrases ? data.h_phrases.toUpperCase().split(',').map(s=>s.trim()) : [];
+                        if(!String(name||'').trim())throw new Error('Debe indicar el nombre de la sustancia o mezcla.');
+                         if(isPura) {
+                             const phArr = ControlBandingMethod.codes(data.h_phrases,true);
                             bandInh = Calculator.getHighestBand(phArr);
                             const is_cmr = document.getElementById('is_cmr')?.checked;
                             if(is_cmr) bandInh = 'E';
                             scoreDer = Calculator.getDermalHazardScore(phArr);
                         } else {
-                            bandInh = document.getElementById('mix_banda_inh')?.value || 'A';
-                            scoreDer = parseInt(document.getElementById('mix_score_der')?.value || 1);
+                            if(!state.mixResult) throw new Error('La mezcla no está calculada o fue modificada. Vuelva a calcular.');
+                             bandInh = state.mixResult.band;
+                             scoreDer = state.mixResult.dermal;
                         }
 
                         // Mods
@@ -1503,13 +1484,13 @@
                         // Calc
                         const is_cmr = document.getElementById('is_cmr')?.checked;
                         const expInh = Calculator.getExposureBand(data.estado_fisico, propInh, parseInt(data.tipo_proceso), parseFloat(data.duracion), data.cantidad_utilizada, mods);
-                        const cReq = Calculator.getControlLevel(bandInh, expInh, data.estado_fisico, is_cmr);
+                        const cReq = Calculator.getControlLevel(bandInh, expInh, data.estado_fisico, is_cmr, data.cantidad_utilizada, propInh);
                         
                         const expDer = Calculator.getDermalExposureScore(data.dermal_task);
                         const rDer = Calculator.getDermalRiskScore(scoreDer, expDer);
 
                         state.unifiedResult = {
-                            context: { company: data.companyName, process: data.process, date: data.evalDate, existControl: parseInt(data.controles_existentes), estado: data.estado_fisico },
+                            context: { company: data.companyName, process: data.process, date: data.evalDate, existControl: parseInt(data.controles_existentes), estado: data.estado_fisico, cantidad:data.cantidad_utilizada, propiedad:propInh, metodo:'COSHH HSE 2019', estimacionDer:'orientativa' },
                             inhalatorio: { name: name||'Sin Nombre', band: bandInh, exp: expInh, controlReq: cReq },
                             dermico: { hazardLvl: scoreDer, expLvl: expDer, riskScore: rDer }
                         };
@@ -1523,7 +1504,7 @@
 
                     } catch (err) { 
                         console.error(err); 
-                        UI.showToast("Error procesando los datos", "error"); 
+                        UI.showToast(err?.message || "No se pudo procesar la evaluación", "error"); 
                     } finally { 
                         if(btn) {
                             btn.disabled=false; 
@@ -1535,6 +1516,7 @@
 
                 async compareSubst() {
                     if(!state.unifiedResult) return UI.showToast("Cargue línea base primero", "error");
+                     if(state.unifiedResult.context?.metodo!=='COSHH HSE 2019')return UI.showToast('Reevalúe primero el producto con el método actual.','error');
                     const cas = document.getElementById('sub-cas-number')?.value;
                     const hs = document.getElementById('sub-h_phrases')?.value;
                     if(!hs) return UI.showToast("Frases H obligatorias para sustitución", "error");
@@ -1555,9 +1537,9 @@
 
                     let cls='', msg='', icon='';
                     if(diffI <= 0 && diffD <= 0 && (diffI < 0 || diffD < 0)) {
-                        cls = 'bg-brand-green/10 text-brand-green border-brand-green'; msg = 'Sustitución Recomendable'; icon = 'check-circle';
+                        cls = 'bg-brand-green/10 text-brand-green border-brand-green'; msg = 'Posible mejora: validar'; icon = 'check-circle';
                     } else if (diffI > 0 || diffD > 0) {
-                        cls = 'bg-red-50 text-red-600 border-red-500'; msg = 'Sustitución Peligrosa'; icon = 'x-circle';
+                        cls = 'bg-red-50 text-red-600 border-red-500'; msg = 'Posible empeoramiento'; icon = 'x-circle';
                     } else {
                         cls = 'bg-brand-yellow/10 text-brand-yellow border-brand-yellow'; msg = 'Peligro Equivalente'; icon = 'minus-circle';
                     }
@@ -1584,74 +1566,45 @@
                 },
 
                 async checkCompatibility() {
-                    const btn = document.getElementById('check-compatibility-btn');
-                    if(btn) btn.innerHTML = `<span class="loader border-t-white w-5 h-5 mr-3"></span> Analizando...`;
-                    
-                    const getCls = async (cas, h) => {
-                        const info = { name: cas || 'Desc', classes: new Set() };
-                        let phrases = h ? h.toUpperCase().split(',').map(s=>s.trim()) : [];
-                        if (cas) {
-                            const data = await ApiService.getChemicalData(cas);
-                            if (data) { info.name = data.name; phrases = [...phrases, ...(data.hPhrases||[])]; }
-                        }
-                        Object.keys(CONSTANTS.HAZARD_CLASSES_MAP).forEach(k => {
-                            if(phrases.some(p => CONSTANTS.HAZARD_CLASSES_MAP[k].includes(p.substring(0,4)))) info.classes.add(k);
-                        });
-                        return { name: info.name, classes: Array.from(info.classes) };
-                    };
-
-                    const [c1, c2] = await Promise.all([
-                        getCls(document.getElementById('chem1_cas')?.value, document.getElementById('chem1_h')?.value),
-                        getCls(document.getElementById('chem2_cas')?.value, document.getElementById('chem2_h')?.value)
-                    ]);
-
-                    let status = 'COMPATIBLE', msg = 'No se detectan incompatibilidades graves SGA directas. Revise FDS.';
-                    let statCls = 'bg-brand-green/10 text-brand-green border-brand-green/20', icon='check-circle-2';
-
-                    c1.classes.forEach(cls1 => {
-                        c2.classes.forEach(cls2 => {
-                            const r1 = CONSTANTS.INCOMPATIBILITY_RULES[`${cls1}-${cls2}`];
-                            const r2 = CONSTANTS.INCOMPATIBILITY_RULES[`${cls2}-${cls1}`];
-                            if(r1 || r2) { status = 'INCOMPATIBLE'; msg = r1 || r2; statCls='bg-red-50 text-red-600 border-red-200'; icon='alert-triangle'; }
-                        });
-                    });
-
-                    const resDiv = document.getElementById('compatibility-result');
-                    if(resDiv) {
-                        resDiv.innerHTML = `
-                            <div class="p-10 rounded-[24px] border-2 ${statCls} text-center glass-card !shadow-none">
-                                <i data-lucide="${icon}" class="w-16 h-16 mx-auto mb-4"></i>
-                                <h3 class="text-3xl font-black mb-3">${status}</h3>
-                                <p class="font-bold text-lg opacity-90 text-brand-dark">${msg}</p>
-                                <div class="mt-6 text-sm font-bold flex justify-center gap-8 opacity-75 text-brand-dark uppercase tracking-widest">
-                                    <span>${c1.name}: [${c1.classes.join(', ')||'S/D'}]</span>
-                                    <span>${c2.name}: [${c2.classes.join(', ')||'S/D'}]</span>
-                                </div>
-                            </div>
-                        `;
-                        lucide.createIcons();
-                        resDiv.classList.remove('hidden');
-                        setTimeout(()=> resDiv.classList.remove('opacity-0'), 50);
-                    }
-                    
-                    if(btn) {
-                        btn.innerHTML = `<i data-lucide="git-compare-arrows" class="w-6 h-6"></i> Analizar Compatibilidad`;
-                        lucide.createIcons();
+                    const btn=document.getElementById('check-compatibility-btn');
+                    if(btn)btn.disabled=true;
+                    const resDiv=document.getElementById('compatibility-result');
+                    try {
+                        const identify=async(casId,hId)=>{
+                            const cas=document.getElementById(casId)?.value?.trim()||'';
+                            let raw=document.getElementById(hId)?.value?.trim()||'';
+                            let name=cas||'Producto';
+                            if(!raw && cas){
+                                const chemical=await ApiService.getChemicalData(cas);
+                                if(chemical?.hPhrases?.length){raw=chemical.hPhrases.join(',');name=chemical.name;}
+                            }
+                            return {name,codes:ControlBandingMethod.codes(raw,false)};
+                        };
+                        const [a,b]=await Promise.all([identify('chem1_cas','chem1_h'),identify('chem2_cas','chem2_h')]);
+                        const result=ControlBandingMethod.compatibility(a.codes,b.codes);
+                        const alert=result.status==='ALERTA DE INCOMPATIBILIDAD';
+                        const css=alert?'bg-red-50 text-red-700 border-red-300':'bg-amber-50 text-amber-900 border-amber-300';
+                        resDiv.innerHTML=`<div class="p-6 rounded-2xl border-2 ${css} text-center"><h3 class="text-xl font-black mb-3">${escapeHTML(result.status)}</h3><p class="font-medium">${escapeHTML(result.message)}</p><p class="text-sm mt-4">Producto A: ${escapeHTML(a.name)} · Producto B: ${escapeHTML(b.name)}</p><p class="text-sm mt-3">La ausencia de alertas no significa compatibilidad demostrada.</p></div>`;
+                    }catch(err){
+                        resDiv.innerHTML=`<div class="p-6 rounded-xl border-2 border-amber-300 bg-amber-50 text-amber-900"><strong>NO EVALUABLE</strong><p class="mt-2">${escapeHTML(err.message||'Faltan datos de la FDS.')}</p></div>`;
+                    }finally{
+                        resDiv.classList.remove('hidden');resDiv.classList.remove('opacity-0');
+                        if(btn){btn.disabled=false;btn.textContent='Analizar Compatibilidad';}
                     }
                 },
 
                 genPDF() {
                     if(!state.unifiedResult) return;
-                    UI.showToast("Generando reporte oficial...");
+                    UI.showToast("Generando informe orientativo...");
                     try {
                         const doc = new jsPDF({format: 'a4'});
                         const cd = `CB-${Date.now().toString().slice(-8)}`;
                         const res = state.unifiedResult;
 
                         doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(0,0,0);
-                        doc.text('REPORTE OFICIAL SST - CONTROL BANDING', 15, 20);
+                        doc.text('INFORME DE CRIBADO - CONTROL BANDING', 15, 20);
                         doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-                        doc.text(`ID: ${cd} | Vía La Movida de SST`, 15, 28);
+                        doc.text(`ID local: ${cd} | La Movida de SST+ | Resultado orientativo`, 15, 28);
 
                         doc.autoTable({
                             startY: 35,
@@ -1677,9 +1630,10 @@
                         doc.text(`Exp (1-4): Nvl ${res.dermico.expLvl}`, 115, y+26);
                         doc.setFont('helvetica', 'bold'); doc.text(`Riesgo Global: ${res.dermico.riskScore}/10`, 115, y+35);
 
-                        doc.save(`SST_Eval_${cd}.pdf`);
-                        const vf = JSON.parse(localStorage.getItem('sst_verified')||'{}');
-                        vf[cd] = new Date().toISOString(); localStorage.setItem('sst_verified', JSON.stringify(vf));
+                        doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('No certifica exposición segura ni sustituye la FDS ni una evaluación profesional.', 15, 285);
+                         doc.save(`SST_Eval_${cd}.pdf`);
+                        const vf = JSON.parse(localStorage.getItem('sst_verified_' + AuthGate.userId())||'{}');
+                        vf[cd] = new Date().toISOString(); localStorage.setItem('sst_verified_' + AuthGate.userId(), JSON.stringify(vf));
                     } catch(e) { console.error(e); UI.showToast("Error en PDF", "error"); }
                 }
             };
@@ -1689,6 +1643,25 @@
                 History: HistoryManager,
                 init() {
                     UI.init();
+                    document.getElementById('import-legacy-history')?.addEventListener('click',()=>HistoryManager.importLegacy());
+                    document.getElementById('history-table-body')?.addEventListener('click',e=>{
+                        const b=e.target.closest('button[data-hist-action]');
+                        if(!b)return;
+                        if(b.dataset.histAction==='load')HistoryManager.loadToDashboard(b.dataset.id);
+                        if(b.dataset.histAction==='delete'&&window.confirm('¿Eliminar esta evaluación del historial local?'))HistoryManager.delete(b.dataset.id);
+                    });
+                    // La selección de mezcla no debe mostrar ni reutilizar campos de sustancia pura.
+                    const changeProductMode=()=>{
+                        const mixed=document.querySelector('input[name="product_type"]:checked')?.value==='mezcla';
+                        document.getElementById('mode-pura')?.classList.toggle('hidden',mixed);
+                        document.getElementById('mode-mezcla')?.classList.toggle('hidden',!mixed);
+                        state.mixResult=null;
+                        document.getElementById('mix_banda_inh').value='';
+                        document.getElementById('mix_score_der').value='';
+                        document.getElementById('mixture-result')?.classList.add('hidden');
+                    };
+                    document.querySelectorAll('input[name="product_type"]').forEach(r=>r.addEventListener('change',changeProductMode));
+                    changeProductMode();
                     
                     document.getElementById('tab-navigation')?.addEventListener('click', e => {
                         const t = e.target.closest('.tab');
@@ -1730,7 +1703,7 @@
                                 lucide.createIcons();
                                 const data = await ApiService.getChemicalData(cas);
                                 if(data) {
-                                    box.innerHTML = `<span class="text-xs text-brand-green font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> ${data.name}</span>`;
+                                    box.innerHTML = `<span class="text-xs text-brand-green font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> ${escapeHTML(data.name)}</span>`;
                                     if(id==='cas_number') {
                                         const inputName = document.getElementById('chemical_name_pura');
                                         if (inputName) inputName.value = data.name;
@@ -1775,13 +1748,13 @@
                         const codeInput = document.getElementById('report-code-input');
                         if (!codeInput) return;
                         const code = codeInput.value.trim();
-                        const verified = JSON.parse(localStorage.getItem('sst_verified') || '{}');
+                        const verified = JSON.parse(localStorage.getItem('sst_verified_' + AuthGate.userId()) || '{}');
                         const res = document.getElementById('verification-result');
                         if (!res) return;
                         if(verified[code]) {
-                            res.innerHTML = `<div class="glass-card bg-brand-green/10 border-2 border-brand-green text-brand-green p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-check" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">Documento Auténtico Válido</h4><p class="font-medium mt-1 text-slate-600">Generado el ${new Date(verified[code]).toLocaleString()}</p></div></div>`;
+                            res.innerHTML = `<div class="glass-card bg-brand-green/10 border-2 border-brand-green text-brand-green p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-check" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">Código encontrado en este navegador</h4><p class="font-medium mt-1 text-slate-600">Generado el ${new Date(verified[code]).toLocaleString()}</p></div></div>`;
                         } else {
-                            res.innerHTML = `<div class="glass-card bg-red-50 border-2 border-red-500 text-red-600 p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-alert" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">No Válido / No Encontrado</h4><p class="font-medium mt-1 text-slate-600">Este código no figura en los registros oficiales de este dispositivo.</p></div></div>`;
+                            res.innerHTML = `<div class="glass-card bg-red-50 border-2 border-red-500 text-red-600 p-6 flex flex-col items-center gap-3 justify-center"><i data-lucide="shield-alert" class="w-12 h-12"></i> <div><h4 class="font-extrabold text-xl">Código no encontrado</h4><p class="font-medium mt-1 text-slate-600">Este código no figura en el registro local de este navegador. No existe verificación independiente en servidor.</p></div></div>`;
                         }
                         lucide.createIcons();
                     });
@@ -1832,7 +1805,9 @@
             };
         })();
 
-        document.addEventListener('DOMContentLoaded', App.init);
+        // AuthGate se ejecuta desde un script independiente y necesita esta referencia.
+        window.App = App;
+        document.addEventListener('DOMContentLoaded', AuthGate.boot);
     </script>
 </body>
 </html>

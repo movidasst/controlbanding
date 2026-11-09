@@ -1,0 +1,59 @@
+/* Identidad visual 2026 de La Movida SST+ — mobile first */
+:root{--movida-teal:#007b85;--movida-navy:#00205b;--movida-bg:#f8fafc;--movida-mint:#e7f6f4;--movida-sky:#edf4fa;--movida-lime:#f1f7e9;--movida-gold:#fff4d6}
+body{background:#f8fafc;color:#294052}
+body.tech-grid{background-image:linear-gradient(165deg,#f7fcfc 0%,#eef8f7 42%,#f9fbfd 100%)}
+.glass-card{background:rgba(255,255,255,.96)!important;border:1px solid #d9e9ea!important;box-shadow:0 12px 38px rgba(0,64,74,.06)!important}
+.input-field{background:#fff;border-color:#bfd5d8}
+.input-field:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #ffb600!important;outline-offset:3px}
+button{min-height:40px}
+header.glass-card{background:#fff!important;box-shadow:0 4px 24px rgba(0,60,68,.04)!important}
+.m-title{font-size:1.25rem;line-height:1.2;font-weight:800;color:#00205b}
+.m-logo{display:block;max-width:min(270px,65vw);width:100%;height:56px;object-fit:contain;object-position:left center}
+.m-brand-bar{background:#fff;border-radius:16px;padding:6px 12px}
+.m-soft-note{background:var(--movida-sky);border-left:4px solid #007b85;border-radius:12px;padding:14px 18px;font-size:.91rem;line-height:1.55;margin:0 0 20px;color:#173d55}
+.m-soft-note a{color:#006d79;text-decoration:underline;font-weight:700}
+.m-amber-note{background:var(--movida-gold);border-color:#ffb600}
+#member-gate{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:radial-gradient(circle at 10% 15%,#d8f3ee 0%,transparent 40%),linear-gradient(140deg,#f9fcfd,#eaf5f3)}
+.gate-card{width:100%;max-width:470px;padding:clamp(22px,5vw,38px);background:#fff;border:1px solid #c8e5e4;border-radius:24px;box-shadow:0 20px 60px rgba(0,64,75,.10)}
+.gate-logo{max-width:300px;width:100%;height:78px;object-fit:contain;margin:0 auto 16px}
+.gate-card h1{color:#00205b;font-weight:800;font-size:1.5rem;line-height:1.3;text-align:center;margin-bottom:6px}
+.gate-card .gate-lede{text-align:center;color:#517178;font-size:.94rem;line-height:1.5;margin:0 0 22px}
+.gate-card label{display:block;color:#00205b;font-size:.92rem;font-weight:750;margin:0 0 6px}
+.gate-card input{display:block;width:100%;border:1px solid #bad6d9;border-radius:12px;padding:13px 14px;margin-bottom:16px;color:#00205b;background:#f9fdfc}
+.gate-card input:focus{outline:3px solid #cdece7;border-color:#007b85}
+.gate-button{width:100%;border-radius:13px;padding:13px 16px;background:#007b85;color:white;font-weight:800;cursor:pointer}
+.gate-button:hover{background:#005f67}
+.gate-button:disabled{opacity:.62;cursor:wait}
+.gate-error{color:#9a2626;background:#fff0f0;border:1px solid #f7c2c2;padding:10px 12px;border-radius:10px;margin:12px 0;font-size:.88rem}
+.gate-foot{font-size:.84rem;color:#5b7378;text-align:center;margin-top:20px;line-height:1.6}
+.gate-foot a{font-weight:700;color:#007b85;text-decoration:underline}
+.auth-pending>header,.auth-pending>#top-of-app,.auth-pending>footer{display:none!important}
+.auth-ready>#member-gate{display:none!important}
+.m-userbar{display:flex;align-items:center;gap:12px;color:#365c65;font-size:.82rem}
+.m-logout{border:1px solid #b4d9d8;background:#f0fbf9;color:#005e68;border-radius:10px;font-size:.82rem;font-weight:800;padding:8px 12px}
+#top-of-app{gap:22px}
+#tab-navigation{position:sticky}
+#tab-navigation .tab{white-space:normal;min-height:46px}
+#mixture-components>div{display:grid;grid-template-columns:minmax(80px,1fr) minmax(115px,1.4fr) minmax(72px,.6fr) auto;align-items:center;gap:8px}
+#mixture-components .mix-h{min-width:0}
+#mixture-components .mix-conc{min-width:0}
+#methodology-note{margin-top:12px}
+@media(max-width:767px){
+ header .max-w-7xl>div{height:auto!important;min-height:76px;gap:8px;padding-block:12px;flex-wrap:wrap}
+ .m-logo{height:47px;max-width:190px}
+ .m-brand-bar{padding:3px}
+ .m-title{font-size:1rem}
+ .m-userbar{flex-wrap:wrap;justify-content:flex-end;font-size:.76rem}
+ #top-of-app{padding-top:14px!important;gap:12px;display:flex;flex-direction:column}
+ #tab-navigation{position:static;display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;gap:8px;padding:10px}
+ #tab-navigation .tab{min-width:max-content;flex-shrink:0;padding:10px 12px}
+ #tab-navigation hr{display:none}
+ main.glass-card{padding:18px!important;min-height:0}
+ .tab-content h2{font-size:1.45rem!important;line-height:1.3}
+ #mixture-components>div{grid-template-columns:1fr 1fr;gap:8px}
+ #mixture-components .mix-h{grid-column:1/-1;grid-row:2}
+ #mixture-components .mix-conc{grid-column:2;grid-row:1}
+ .m-soft-note{font-size:.84rem}
+ #riskMatrix-unified{min-width:280px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
