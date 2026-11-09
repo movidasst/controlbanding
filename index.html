@@ -12,6 +12,7 @@
     <script src="auth-gate.js" defer></script>
     <script src="evaluation-evidence.js" defer></script>
     <script src="report-pdf.js" defer></script>
+    <script src="accessibility.js" defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -282,6 +283,7 @@
                     <span id="draft-status" class="text-xs text-slate-600" role="status" aria-live="polite">El borrador se almacena únicamente en este navegador.</span>
                 </div>
                 <p id="wizard-errors" class="wizard-errors" role="alert" tabindex="-1" hidden></p>
+                <p id="wizard-status" class="sr-only" role="status" aria-live="polite">Paso 1 de 5</p>
                 <form id="unifiedBandingForm">
                     <!-- Step 1: Context Data -->
                     <div id="step-1" class="wizard-step active">
@@ -1012,6 +1014,7 @@
             const state = {
                 currentStep: 1,
                 wizardTotalSteps: 5,
+                apiPending: 0,
                 apiCache: {},
                 unifiedResult: null, mixResult: null, editingId: null, restoring:false // Resultado y edición separados
             };
@@ -1309,6 +1312,7 @@
                                           : 'tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all';
                     });
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === tabId));
+                    ControlBandingA11y.syncTabs(tabId);
                     if(tabId === 'historial') HistoryManager.renderList();
                     if(tabId === 'sustitucion' && state.unifiedResult) {
                         const info = document.getElementById('current-product-info');
@@ -1329,18 +1333,22 @@
                     }
                 },
                 showStep(step) {
+                    if(step<1||step>state.wizardTotalSteps)return false;
+                    ControlBandingA11y.clearError();
                     if(step > state.currentStep) {
                         const currentDiv = document.getElementById(`step-${state.currentStep}`);
                         if (currentDiv) {
                             if(state.currentStep===2) {
+                                if(state.apiPending>0){ControlBandingA11y.error('La consulta de identificación química todavía está en curso.',null);return false;}
                                 const isMix=document.querySelector('input[name="product_type"]:checked')?.value==='mezcla';
                                 if(isMix && !state.mixResult) {
-                                    this.showToast('Calcule una mezcla con componentes y frases H válidas antes de avanzar.', 'error');
+                                    ControlBandingA11y.error('Calcule una mezcla con componentes y frases H válidas antes de avanzar.',document.getElementById('calculate-mixture-btn'));
+                                    this.showToast('Calcule una mezcla válida antes de continuar.', 'error');
                                     return false;
                                 }
                                 if(!isMix) {
                                     try { ControlBandingMethod.codes(document.getElementById('h_phrases')?.value,true); }
-                                    catch(err) { this.showToast(err.message,'error'); return false; }
+                                    catch(err) { ControlBandingA11y.error(err.message,document.getElementById('h_phrases'));this.showToast(err.message,'error'); return false; }
                                 }
                             }
                             const reqs = currentDiv.querySelectorAll('[required]');
@@ -1348,6 +1356,7 @@
                                 if(!r.value && !r.closest('.hidden')) {
                                     r.classList.add('input-error');
                                     setTimeout(()=>r.classList.remove('input-error'),2000);
+                                    ControlBandingA11y.error("Complete el campo obligatorio antes de continuar.",r);
                                     this.showToast("Complete los campos obligatorios (*)", "error");
                                     return false;
                                 }
@@ -1361,6 +1370,7 @@
 
                     const pb = document.getElementById('progressBar');
                     if (pb) pb.style.width = `${(step/state.wizardTotalSteps)*100}%`;
+                    ControlBandingA11y.syncWizard(step,true);
                     
                     for(let i=1; i<=5; i++) {
                         const lbl = document.getElementById(`step-label-${i}`);
@@ -1488,7 +1498,10 @@
                     row.querySelector('.mix-delete').addEventListener('click',()=>{row.remove();invalidate();});
                     row.querySelector('.mix-cas').addEventListener('blur',async e=>{
                         const cas=e.target.value.trim();if(!cas)return;
-                        const chemical=await ApiService.getChemicalData(cas);
+                        state.apiPending++;
+                        let chemical=null;
+                        try{chemical=await ApiService.getChemicalData(cas);}
+                        finally{state.apiPending--; }
                         if(chemical?.hPhrases?.length){
                             row.querySelector('.mix-h').value=chemical.hPhrases.join(', ');
                             invalidate();
@@ -1501,6 +1514,7 @@
                     const btn=document.getElementById('calculate-mixture-btn');
                     if(btn)btn.disabled=true;
                     try{
+                        if(state.apiPending>0)throw new Error('La consulta de CAS aún no ha terminado. Vuelve a calcular al finalizar.');
                         const items=[...document.querySelectorAll('#mixture-components > div')].map(row=>({
                             phrases:row.querySelector('.mix-h')?.value||'',
                             concentration:row.querySelector('.mix-conc')?.value||''
@@ -1538,6 +1552,7 @@
                         const form = document.getElementById('unifiedBandingForm');
                         const fd = new FormData(form);
                         const data = Object.fromEntries(fd.entries());
+                        if(state.apiPending>0)throw new Error('Aún se consultan datos químicos. Finaliza la consulta antes de evaluar.');
                         const evidence = ControlBandingEvidence.validate(ControlBandingEvidence.capture(form),ControlBandingMethod);
                         const isPura = data.product_type === 'pura';
                         
@@ -1591,8 +1606,9 @@
                             setTimeout(()=> { resD.classList.remove('opacity-0'); resD.scrollIntoView({behavior:'smooth'}); }, 50);
                         }
 
-                    } catch (err) { 
-                        console.error(err); 
+                    } catch (err) {
+                        console.error(err);
+                        ControlBandingA11y.error(err?.message||"No se pudo procesar la evaluación.",null);
                         UI.showToast(err?.message || "No se pudo procesar la evaluación", "error"); 
                     } finally { 
                         if(btn) {
@@ -1726,6 +1742,7 @@
                         const b=e.target.closest('button[data-hist-action]');
                         if(!b)return;
                         if(b.dataset.histAction==='load')HistoryManager.loadToDashboard(b.dataset.id);
+                        if(b.dataset.histAction==='edit')HistoryManager.loadToEdit(b.dataset.id);
                         if(b.dataset.histAction==='delete'&&window.confirm('¿Eliminar esta evaluación del historial local?'))HistoryManager.delete(b.dataset.id);
                     });
                     // La selección de mezcla no debe mostrar ni reutilizar campos de sustancia pura.
@@ -1740,6 +1757,7 @@
                     };
                     document.querySelectorAll('input[name="product_type"]').forEach(r=>r.addEventListener('change',changeProductMode));
                     changeProductMode();
+                    ControlBandingA11y.init({onTab:id=>UI.changeTab(id)});
                     
                     document.getElementById('tab-navigation')?.addEventListener('click', e => {
                         const t = e.target.closest('.tab');
@@ -1779,7 +1797,10 @@
                                 if(!cas||!box) return;
                                 box.innerHTML = `<span class="text-xs text-brand-teal"><i data-lucide="loader" class="w-3 h-3 animate-spin inline"></i> Buscando...</span>`;
                                 lucide.createIcons();
-                                const data = await ApiService.getChemicalData(cas);
+                                state.apiPending++;
+                                let data=null;
+                                try{data=await ApiService.getChemicalData(cas);}
+                                finally{state.apiPending--;}
                                 if(data) {
                                     box.innerHTML = `<span class="text-xs text-brand-green font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> ${escapeHTML(data.name)}</span>`;
                                     if(id==='cas_number') {
