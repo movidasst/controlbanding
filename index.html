@@ -1501,6 +1501,7 @@
                         document.getElementById('mix_banda_inh').value='';
                         document.getElementById('mix_score_der').value='';
                         document.getElementById('mixture-result').classList.add('hidden');
+                        const note=document.getElementById('methodology-note');if(note)note.hidden=true;
                     };
                     row.addEventListener('input',invalidate);
                     row.querySelector('.mix-delete').addEventListener('click',()=>{row.remove();invalidate();});
@@ -1537,6 +1538,7 @@
                         let note=document.getElementById('methodology-note');
                         if(!note){note=document.createElement('p');note.id='methodology-note';note.className='m-soft-note m-amber-note';box.insertAdjacentElement('afterend',note);}
                         note.textContent=result.notice+(result.requiresExpert?' H334: confirme umbrales y solicite revisión especializada.':'');
+                        note.hidden=false;
                         UI.showToast('Cribado de mezcla calculado. Verifique la FDS.','success');
                     }catch(err){
                         state.mixResult=null;
