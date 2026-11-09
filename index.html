@@ -242,7 +242,7 @@
                     <i data-lucide="book-open" class="w-5 h-5"></i> Guía y Manual
                 </button>
                 <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all" data-tab="verificar">
-                    <i data-lucide="file-badge" class="w-5 h-5"></i> Verificar Reporte
+                    <i data-lucide="file-badge" class="w-5 h-5"></i> Consultar informe
                 </button>
                 <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all" data-tab="fundamento">
                     <i data-lucide="microscope" class="w-5 h-5"></i> Fundamentos
@@ -705,8 +705,8 @@
                                         <p class="text-4xl font-black text-brand-teal" id="res-inh-req">1</p>
                                     </div>
                                     <div class="text-right flex flex-col items-end">
-                                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Riesgo Residual</p>
-                                        <span id="res-inh-resid" class="status-badge bg-green-100 text-green-700">Controlado</span>
+                                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Brecha preliminar de control</p>
+                                        <span id="res-inh-resid" class="status-badge bg-green-100 text-green-700">Por verificar</span>
                                     </div>
                                 </div>
                             </div>
@@ -1425,11 +1425,11 @@
                     if(elInhReq) elInhReq.textContent = res.inhalatorio.controlReq;
                     
                     const residMap = {
-                        1: {c: 'bg-red-100 text-red-700', t: 'Inaceptable'},
-                        0: {c: 'bg-brand-yellow/20 text-yellow-700', t: 'Moderado'},
+                        1: {c: 'bg-red-100 text-red-700', t: 'Brecha declarada'},
+                        0: {c: 'bg-brand-yellow/20 text-yellow-800', t: 'Requiere verificar'},
                         '-1': {c: 'bg-green-100 text-green-700', t: 'Por verificar'},
-                        '-2': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
-                        '-3': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
+                        '-2': {c: 'bg-brand-teal/10 text-brand-teal', t: 'Por verificar'},
+                        '-3': {c: 'bg-brand-teal/10 text-brand-teal', t: 'Por verificar'},
                     };
                     const diff = res.inhalatorio.controlReq === 4 ? 1 : res.inhalatorio.controlReq - res.context.existControl;
                     const resSt = diff > 0 ? residMap[1] : (diff === 0 ? residMap[0] : residMap['-1']);
@@ -1450,9 +1450,9 @@
                     if(elDerExp) elDerExp.textContent = eText[res.dermico.expLvl] || 'Indeterminada';
                     if(elDerScore) elDerScore.textContent = res.dermico.riskScore;
                     
-                    let dCrit = {c: 'bg-red-100 text-red-700', t:'Inaceptable'};
+                    let dCrit = {c: 'bg-red-100 text-red-700', t:'Prioridad alta'};
                     if(res.dermico.riskScore <=3) dCrit={c:'bg-brand-teal/10 text-brand-teal', t:'Prioridad orientativa baja'};
-                    else if(res.dermico.riskScore <=6) dCrit={c:'bg-brand-yellow/20 text-yellow-700', t:'Mejorar'};
+                    else if(res.dermico.riskScore <=6) dCrit={c:'bg-brand-yellow/20 text-yellow-700', t:'Prioridad media'};
                     
                     const elDerCrit = document.getElementById('res-der-crit');
                     if (elDerCrit) {
