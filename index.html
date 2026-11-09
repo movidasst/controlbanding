@@ -943,13 +943,8 @@
                     'H220': 'Gas ext. inflamable.', 'H224': 'Líquido ext. inflamable.', 'H225': 'Líquido muy inflamable.', 'H226': 'Líquidos inflamables.', 'H272': 'Comburente.', 
                     'H300': 'Mortal ingestión.', 'H301': 'Tóxico ingestión.', 'H302': 'Nocivo ingestión.', 'H310': 'Mortal contacto piel.', 'H311': 'Tóxico contacto piel.', 'H312': 'Nocivo contacto piel.', 'H314': 'Quemaduras graves piel.', 'H315': 'Irritación cutánea.', 'H317': 'Alergia piel.', 'H318': 'Lesiones oculares.', 'H319': 'Irritación ocular.', 'H330': 'Mortal inhalación.', 'H331': 'Tóxico inhalación.', 'H332': 'Nocivo inhalación.', 'H334': 'Asma inhalación.', 'H335': 'Irrita vías resp.', 'H336': 'Somnolencia.', 'H340': 'Defectos genéticos.', 'H341': 'Sosp. defectos genéticos.', 'H350': 'Provoca cáncer.', 'H351': 'Sosp. cáncer.', 'H360': 'Perjudica fertilidad/feto.', 'H361': 'Sosp. perjudica fertilidad.', 'H370': 'Daños órganos.', 'H372': 'Daños órganos repetida.', 'H373': 'Puede dañar órganos.'
                 },
-                HAZARD_BANDS: { 
-                    'H316':'A','H320':'A','H336':'A','H335':'A', 
-                    'H302':'B','H312':'B','H332':'B','H315':'B','H319':'B', 
-                    'H301':'C','H311':'C','H331':'C','H314':'C','H318':'C','H317':'C','H371':'C','H373':'C', 
-                    'H330':'D','H300':'D','H310':'D','H334':'D','H341':'D','H351':'D','H361':'D','H370':'D','H372':'D', 
-                    'H340':'E','H350':'E','H360':'E' 
-                },
+                // La fuente única y vigente de frases H es methodology.js.
+                HAZARD_BANDS: null,
                 DERMAL_HAZARDS: {
                     'H350': 5, 'H340': 5, 
                     'H314': 4, 'H317': 4, 'H310': 4,
@@ -976,8 +971,12 @@
                 currentStep: 1,
                 wizardTotalSteps: 5,
                 apiCache: {},
-                unifiedResult: null // Holds both inhalatorio and dermico
+                unifiedResult: null, mixResult: null // La mezcla exige validación antes de continuar
             };
+
+            function escapeHTML(value) {
+                return String(value ?? '').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+            }
 
             // --- API PUBCHEM ---
             const ApiService = {
@@ -1037,55 +1036,17 @@
             const Calculator = {
                 // Inhalatorio Core
                 getHighestBand(phrases) {
-                    if(!phrases || phrases.length===0) return 'A';
-                    let highest = 'A';
-                    const order = ['A','B','C','D','E'];
-                    phrases.forEach(p => {
-                        const code = p.match(/H\d{3}/)?.[0];
-                        if (code && CONSTANTS.HAZARD_BANDS[code]) {
-                            const b = CONSTANTS.HAZARD_BANDS[code];
-                            if(order.indexOf(b) > order.indexOf(highest)) highest = b;
-                        }
-                    });
-                    return highest;
+                    return ControlBandingMethod.band(phrases);
                 },
                 getExposureBand(estado, propiedad, proceso, duracion, cantidad, modifiers) {
-                    const propMap = { 'baja': 10, 'media': 50, 'alta': 200 };
-                    const procMap = [0, 10, 50, 50, 100, 200];
-                    const cantMap = { 'pequena': 0.5, 'mediana': 1.0, 'grande': 2.0 };
-
-                    let exp = (propMap[propiedad] || 50) + (procMap[proceso] || 50);
-                    exp *= duracion * (cantMap[cantidad] || 1.0);
-                    
-                    if(modifiers) {
-                        exp *= (modifiers.vol * modifiers.vent * modifiers.temp);
-                    }
-                    if (exp < 50) return 1;
-                    if (exp <= 250) return 2;
-                    if (exp <= 1000) return 3;
-                    return 4;
+                    // Tablas HSE: cantidad x pulverulencia/volatilidad. No inventar ajustes numéricos.
+                    return ControlBandingMethod.exposure(estado, propiedad, cantidad);
                 },
-                getControlLevel(peligro, exposicion, estado, isCmr) {
-                    if (isCmr || peligro === 'E') return 4;
-                    const map = {'A':0, 'B':1, 'C':2, 'D':3};
-                    const mat = {
-                        solido:  [ [1, 1, 2, 3], [1, 2, 3, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        liquido: [ [1, 1, 2, 2], [1, 2, 2, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        gas:     [ [1, 2, 3, 4], [2, 3, 4, 4], [3, 4, 4, 4], [4, 4, 4, 4] ]
-                    };
-                    return mat[estado]?.[map[peligro]]?.[exposicion - 1] ?? 1;
+                getControlLevel(peligro, exposicion, estado, isCmr, cantidad, propiedad) {
+                    return ControlBandingMethod.control(peligro, exposicion, estado, cantidad, propiedad, isCmr);
                 },
-                
-                // Dérmico Core
                 getDermalHazardScore(phrases) {
-                    let score = 1;
-                    phrases.forEach(p => {
-                        const code = p.match(/H\d{3}/)?.[0];
-                        if (code && CONSTANTS.DERMAL_HAZARDS[code]) {
-                            if(CONSTANTS.DERMAL_HAZARDS[code] > score) score = CONSTANTS.DERMAL_HAZARDS[code];
-                        }
-                    });
-                    return score;
+                    return ControlBandingMethod.dermal(phrases);
                 },
                 getDermalExposureScore(task) {
                     const map = {
@@ -1105,7 +1066,7 @@
 
             // --- HISTORY MANAGER ---
             const HistoryManager = {
-                key: 'sst_evaluations_history',
+                get key() { return 'sst_evaluations_history_' + AuthGate.userId(); },
                 save(evaluation) {
                     const hist = this.getAll();
                     evaluation.id = `EV-${Date.now()}`;
@@ -1115,7 +1076,7 @@
                     this.renderList();
                     UI.showToast("Evaluación guardada en Historial", "success");
                 },
-                getAll() { return JSON.parse(localStorage.getItem(this.key)) || []; },
+                getAll() { try { const items=JSON.parse(localStorage.getItem(this.key)); return Array.isArray(items)?items:[]; } catch { return []; } },
                 delete(id) {
                     const hist = this.getAll().filter(e => e.id !== id);
                     localStorage.setItem(this.key, JSON.stringify(hist));
@@ -1152,8 +1113,8 @@
                     tbody.innerHTML = data.map(d => `
                         <tr class="hover:bg-slate-50 transition-colors group">
                             <td class="px-6 py-4 text-slate-500">${new Date(d.timestamp).toLocaleDateString()}</td>
-                            <td class="px-6 py-4 font-bold text-brand-dark">${d.inhalatorio.name}</td>
-                            <td class="px-6 py-4 text-slate-500">${d.context.process}</td>
+                            <td class="px-6 py-4 font-bold text-brand-dark">${escapeHTML(d.inhalatorio.name)}</td>
+                            <td class="px-6 py-4 text-slate-500">${escapeHTML(d.context.process)}</td>
                             <td class="px-6 py-4 text-center">
                                 <span class="bg-slate-100 text-brand-teal px-2 py-1 rounded font-black text-xs">Banda ${d.inhalatorio.band} (Nivel ${d.inhalatorio.controlReq})</span>
                             </td>
@@ -1181,10 +1142,10 @@
                     const is_nano = document.getElementById('is_nano');
                     if (is_cmr) data.is_cmr = is_cmr.checked;
                     if (is_nano) data.is_nano = is_nano.checked;
-                    localStorage.setItem('sst_draft', JSON.stringify(data));
+                    localStorage.setItem('sst_draft_' + AuthGate.userId(), JSON.stringify(data));
                 },
                 load() {
-                    const data = JSON.parse(localStorage.getItem('sst_draft'));
+                    const data = JSON.parse(localStorage.getItem('sst_draft_' + AuthGate.userId()));
                     if(!data) return;
                     Object.keys(data).forEach(k => {
                         const el = document.getElementsByName(k)[0];
@@ -1197,7 +1158,7 @@
                     if (estadoFisico) estadoFisico.dispatchEvent(new Event('change'));
                 },
                 clear() {
-                    localStorage.removeItem('sst_draft');
+                    localStorage.removeItem('sst_draft_' + AuthGate.userId());
                 }
             };
 
@@ -1206,7 +1167,7 @@
                 init() {
                     // Solo inicializar cosas básicas y chequear persistencia.
                     const prompt = document.getElementById('session-restore-prompt');
-                    if(prompt && localStorage.getItem('sst_draft')) {
+                    if(prompt && localStorage.getItem('sst_draft_' + AuthGate.userId())) {
                         prompt.classList.remove('hidden');
                         document.getElementById('restore-yes')?.addEventListener('click', () => {
                             Storage.load();
@@ -1245,7 +1206,7 @@
                         if (info) {
                             info.innerHTML = `
                                 <div class="text-center w-full">
-                                    <h4 class="font-extrabold text-2xl text-brand-dark mb-4">${state.unifiedResult.inhalatorio.name}</h4>
+                                    <h4 class="font-extrabold text-2xl text-brand-dark mb-4">${escapeHTML(state.unifiedResult.inhalatorio.name)}</h4>
                                     <p class="text-slate-500 font-medium mb-2 uppercase tracking-widest text-xs">Nivel de Peligro Base</p>
                                     <div class="mt-2 inline-flex items-center justify-center bg-brand-teal text-white px-8 py-3 rounded-full font-black text-3xl shadow-lg shadow-brand-teal/30">
                                         Banda ${state.unifiedResult.inhalatorio.band}
@@ -1262,6 +1223,17 @@
                     if(step > state.currentStep) {
                         const currentDiv = document.getElementById(`step-${state.currentStep}`);
                         if (currentDiv) {
+                            if(state.currentStep===2) {
+                                const isMix=document.querySelector('input[name="product_type"]:checked')?.value==='mezcla';
+                                if(isMix && !state.mixResult) {
+                                    this.showToast('Calcule una mezcla con componentes y frases H válidas antes de avanzar.', 'error');
+                                    return false;
+                                }
+                                if(!isMix) {
+                                    try { ControlBandingMethod.codes(document.getElementById('h_phrases')?.value,true); }
+                                    catch(err) { this.showToast(err.message,'error'); return false; }
+                                }
+                            }
                             const reqs = currentDiv.querySelectorAll('[required]');
                             for(let r of reqs) {
                                 if(!r.value && !r.closest('.hidden')) {
@@ -1289,27 +1261,19 @@
                     Storage.save();
                     return true;
                 },
-                renderMatrix(estado, peligro, exp) {
-                    const matrices = {
-                        solido:  [ [1, 1, 2, 3], [1, 2, 3, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        liquido: [ [1, 1, 2, 2], [1, 2, 2, 3], [2, 2, 3, 4], [3, 3, 4, 4] ],
-                        gas:     [ [1, 2, 3, 4], [2, 3, 4, 4], [3, 4, 4, 4], [4, 4, 4, 4] ]
-                    };
-                    const mat = matrices[estado] || matrices.liquido;
-                    const b = ['A', 'B', 'C', 'D'];
-                    const bIdx = b.indexOf(peligro);
-                    const eIdx = exp - 1;
-
-                    let html = `<thead><tr><th class="w-16">Peligro</th><th>EP1</th><th>EP2</th><th>EP3</th><th>EP4</th></tr></thead><tbody>`;
-                    mat.forEach((row, i) => {
-                        html += `<tr><th>${b[i]}</th>`;
-                        row.forEach((cell, j) => {
-                            const isHighlight = (i === bIdx && j === eIdx) && peligro !== 'E';
-                            html += `<td class="matrix-cell-${cell} ${isHighlight ? 'highlight-matrix' : ''}">${cell}</td>`;
-                        });
-                        html += `</tr>`;
-                    });
-                    return html + `</tbody>`;
+                renderMatrix(estado, peligro, exp, cantidad, propiedad) {
+                    const matriz = ControlBandingMethod.CONTROL[estado];
+                    if(!matriz) return '<tbody><tr><td>Fuera del alcance de COSHH.</td></tr></tbody>';
+                    let html = '<thead><tr><th>Peligro</th><th>EP1</th><th>EP2</th><th>EP3</th><th>EP4</th></tr></thead><tbody>';
+                    for(const banda of ['A','B','C','D','E']) {
+                        html += '<tr><th>'+banda+'</th>';
+                        for(let i=1;i<=4;i++){
+                            const lvl=ControlBandingMethod.control(banda,i,estado,cantidad,propiedad);
+                            html += '<td class="matrix-cell-'+lvl+' '+(banda===peligro&&i===exp?'highlight-matrix':'')+'">'+lvl+'</td>';
+                        }
+                        html += '</tr>';
+                    }
+                    return html+'</tbody>';
                 },
                 renderUnifiedDashboard() {
                     if(!state.unifiedResult) return;
@@ -1330,7 +1294,7 @@
                     const residMap = {
                         1: {c: 'bg-red-100 text-red-700', t: 'Inaceptable'},
                         0: {c: 'bg-brand-yellow/20 text-yellow-700', t: 'Moderado'},
-                        '-1': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
+                        '-1': {c: 'bg-green-100 text-green-700', t: 'Por verificar'},
                         '-2': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
                         '-3': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
                     };
@@ -1354,7 +1318,7 @@
                     if(elDerScore) elDerScore.textContent = res.dermico.riskScore;
                     
                     let dCrit = {c: 'bg-red-100 text-red-700', t:'Inaceptable'};
-                    if(res.dermico.riskScore <=3) dCrit={c:'bg-green-100 text-green-700', t:'Aceptable'};
+                    if(res.dermico.riskScore <=3) dCrit={c:'bg-brand-teal/10 text-brand-teal', t:'Prioridad orientativa baja'};
                     else if(res.dermico.riskScore <=6) dCrit={c:'bg-brand-yellow/20 text-yellow-700', t:'Mejorar'};
                     
                     const elDerCrit = document.getElementById('res-der-crit');
@@ -1392,7 +1356,7 @@
                     }
                     
                     const matrixUnified = document.getElementById('riskMatrix-unified');
-                    if(matrixUnified) matrixUnified.innerHTML = this.renderMatrix(res.context.estado, res.inhalatorio.band, res.inhalatorio.exp);
+                    if(matrixUnified) matrixUnified.innerHTML = this.renderMatrix(res.context.estado, res.inhalatorio.band, res.inhalatorio.exp, res.context.cantidad, res.context.propiedad);
 
                     lucide.createIcons();
                 }
@@ -1752,7 +1716,7 @@
                                 lucide.createIcons();
                                 const data = await ApiService.getChemicalData(cas);
                                 if(data) {
-                                    box.innerHTML = `<span class="text-xs text-brand-green font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> ${data.name}</span>`;
+                                    box.innerHTML = `<span class="text-xs text-brand-green font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> ${escapeHTML(data.name)}</span>`;
                                     if(id==='cas_number') {
                                         const inputName = document.getElementById('chemical_name_pura');
                                         if (inputName) inputName.value = data.name;
