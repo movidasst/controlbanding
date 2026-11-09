@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SST | Herramienta Avanzada de Control Banding</title>
+    <title>Control Banding | La Movida de SST+</title>
+    <meta name="description" content="Evaluación cualitativa y documentada de peligros químicos mediante COSHH Essentials. Comunidad de La Movida de SST+.">
     
     <link rel="stylesheet" href="theme-2026.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="methodology.js" defer></script>
     <script src="auth-gate.js" defer></script>
+    <script src="evaluation-evidence.js" defer></script>
+    <script src="report-pdf.js" defer></script>
+    <script src="accessibility.js" defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -152,6 +156,7 @@
 <script defer src="https://www.movidasst.com/analytics.js?v=20261025-ga4com2"></script>
 </head>
 <body class="tech-grid relative min-h-screen flex flex-col auth-pending">
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
     <section id="member-gate" aria-labelledby="gate-heading">
         <div class="gate-card">
             <img class="gate-logo" src="https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp" alt="La Movida de SST+">
@@ -177,7 +182,7 @@
     </div>
 
     <!-- UI Elements -->
-    <div id="toast-notification" class="toast">
+    <div id="toast-notification" class="toast" role="status" aria-live="polite" aria-atomic="true">
         <i data-lucide="info" class="w-5 h-5 text-white" id="toast-icon"></i>
         <span id="toast-message"></span>
     </div>
@@ -214,11 +219,11 @@
         
         <!-- Sidebar Navigation -->
         <aside class="w-full md:w-64 flex-shrink-0">
-            <nav id="tab-navigation" class="glass-card flex flex-col space-y-2 p-4 sticky top-28" aria-label="Sidebar">
-                <button class="tab active flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-brand-teal text-white shadow-md shadow-brand-teal/20" data-tab="evaluacion_unificada">
+            <nav id="tab-navigation" class="glass-card flex flex-col space-y-2 p-4 sticky top-28" aria-label="Secciones de Control Banding">
+                <button type="button" class="tab active flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-brand-teal text-white shadow-md shadow-brand-teal/20" data-tab="evaluacion_unificada">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i> Nueva Evaluación
                 </button>
-                <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-dark rounded-xl hover:bg-slate-100/50 hover:text-brand-teal transition-all" data-tab="historial">
+                <button type="button" class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-brand-dark rounded-xl hover:bg-slate-100/50 hover:text-brand-teal transition-all" data-tab="historial">
                     <i data-lucide="folder-open" class="w-5 h-5"></i> Mis Evaluaciones
                 </button>
                 
@@ -237,7 +242,7 @@
                     <i data-lucide="book-open" class="w-5 h-5"></i> Guía y Manual
                 </button>
                 <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all" data-tab="verificar">
-                    <i data-lucide="file-badge" class="w-5 h-5"></i> Verificar Reporte
+                    <i data-lucide="file-badge" class="w-5 h-5"></i> Consultar informe
                 </button>
                 <button class="tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all" data-tab="fundamento">
                     <i data-lucide="microscope" class="w-5 h-5"></i> Fundamentos
@@ -246,7 +251,7 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="glass-card flex-grow p-6 md:p-10 min-h-[600px]">
+        <main id="main-content" tabindex="-1" class="glass-card flex-grow p-6 md:p-10 min-h-[600px]">
             
             <!-- Tab Content: Unified Risk Assessment -->
             <div id="evaluacion_unificada" class="tab-content active">
@@ -261,7 +266,7 @@
                 <!-- Wizard Progress -->
                 <div class="mb-10 relative">
                     <div class="overflow-hidden h-3 mb-4 text-xs flex rounded-full bg-slate-200/50">
-                        <div id="progressBar" style="width: 20%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-brand-teal transition-all duration-500"></div>
+                        <div id="progressBar" role="progressbar" aria-label="Avance de la evaluación" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" style="width: 20%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-brand-teal transition-all duration-500"></div>
                     </div>
                     <div class="flex justify-between text-[11px] sm:text-xs font-bold text-slate-400">
                         <span id="step-label-1" class="text-brand-teal">1. Contexto</span>
@@ -272,9 +277,18 @@
                     </div>
                 </div>
 
+                <div class="evidence-toolbar" role="group" aria-label="Guardar y recuperar evaluación">
+                    <button id="save-draft-btn" type="button" class="evidence-action"><i data-lucide="save" class="w-4 h-4" aria-hidden="true"></i> Guardar borrador</button>
+                    <button id="restore-draft-btn" type="button" class="evidence-action"><i data-lucide="refresh-cw" class="w-4 h-4" aria-hidden="true"></i> Recuperar borrador</button>
+                    <span id="draft-status" class="text-xs text-slate-600" role="status" aria-live="polite">El borrador se almacena únicamente en este navegador.</span>
+                </div>
+                <p id="wizard-errors" class="wizard-errors" role="alert" tabindex="-1" hidden></p>
+                <p id="wizard-status" class="sr-only" role="status" aria-live="polite">Paso 1 de 5</p>
                 <form id="unifiedBandingForm">
                     <!-- Step 1: Context Data -->
                     <div id="step-1" class="wizard-step active">
+                        <h3 class="text-xl font-extrabold text-brand-dark mb-3">Paso 1. Contexto del trabajo</h3>
+                        <p class="text-sm text-slate-600 mb-6">Registra los datos reales del proceso, del lugar de trabajo y de la persona que realiza la evaluación.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label class="block text-sm font-bold text-brand-dark mb-2">Empresa</label><input type="text" name="companyName" class="input-field" placeholder="Nombre de la empresa" required></div>
                             <div><label class="block text-sm font-bold text-brand-dark mb-2">Evaluador</label><input type="text" id="evaluatorName" name="evaluatorName" class="input-field" placeholder="Su nombre" required></div>
@@ -319,15 +333,17 @@
                     
                     <!-- Step 2: Hazard Identification (Substance vs Mixture) -->
                     <div id="step-2" class="wizard-step">
+                        <h3 class="text-xl font-extrabold text-brand-dark mb-3">Paso 2. Identificación y ficha de seguridad</h3>
+                        <p class="text-sm text-slate-600 mb-5">Utiliza las frases H verificadas en las secciones 2 y 3 de la FDS. La consulta automática es una ayuda, no sustituye la ficha del producto.</p>
                         <div class="flex flex-col sm:flex-row gap-4 mb-8 bg-slate-100/50 p-2 rounded-xl w-fit mx-auto border border-slate-200">
-                            <label class="flex-1 cursor-pointer">
-                                <input type="radio" name="product_type" value="pura" class="peer hidden" checked>
+                            <label class="flex-1 cursor-pointer product-radio-label">
+                                <input type="radio" name="product_type" value="pura" class="peer sr-only" checked>
                                 <div class="px-6 py-3 rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-brand-teal peer-checked:shadow-sm transition-all flex items-center justify-center gap-2 text-center">
                                     <i data-lucide="flask-round" class="w-4 h-4"></i> Sustancia Pura
                                 </div>
                             </label>
-                            <label class="flex-1 cursor-pointer">
-                                <input type="radio" name="product_type" value="mezcla" class="peer hidden">
+                            <label class="flex-1 cursor-pointer product-radio-label">
+                                <input type="radio" name="product_type" value="mezcla" class="peer sr-only">
                                 <div class="px-6 py-3 rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-brand-dark peer-checked:shadow-sm transition-all flex items-center justify-center gap-2 text-center">
                                     <i data-lucide="beaker" class="w-4 h-4"></i> Mezcla Compleja
                                 </div>
@@ -408,6 +424,17 @@
                                 <input type="hidden" id="mix_score_der" name="mix_score_der">
                             </div>
                         </div>
+
+                        <fieldset class="evidence-panel mt-8">
+                            <legend class="evidence-legend">Fuente de información y ficha de datos de seguridad (FDS)</legend>
+                            <p class="text-sm text-slate-600 mb-4">Estos datos permiten reproducir la evaluación y comprobar que se consultó una ficha identificable y vigente. La revisión profesional sigue siendo necesaria.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label for="fdSource">Fabricante / proveedor de la FDS <span aria-hidden="true">*</span></label><input id="fdSource" name="fdSource" class="input-field" type="text" maxlength="180" placeholder="Proveedor y producto documentado" required></div>
+                                <div><label for="fdRevision">Identificación / revisión de FDS <span aria-hidden="true">*</span></label><input id="fdRevision" name="fdRevision" class="input-field" type="text" maxlength="120" placeholder="Nº de revisión, edición o código" required></div>
+                                <div><label for="fdDate">Fecha de revisión de FDS (opcional)</label><input id="fdDate" name="fdDate" class="input-field" type="date"></div>
+                                <div><label for="fdUrl">Enlace HTTPS a la FDS (opcional)</label><input id="fdUrl" name="fdUrl" class="input-field" type="url" maxlength="900" placeholder="https://..."></div>
+                            </div>
+                        </fieldset>
 
                         <!-- Common Modifiers -->
                         <div class="mt-8 bg-slate-50 p-5 rounded-xl border border-slate-200">
@@ -505,7 +532,7 @@
 
                         <!-- Expert Mode -->
                         <div class="mt-8 pt-4 border-t border-slate-200/60">
-                            <button type="button" id="toggle-expert-mode" class="text-sm font-bold text-brand-teal flex items-center gap-2 hover:text-brand-dark transition-colors">
+                            <button type="button" id="toggle-expert-mode" aria-expanded="false" aria-controls="expert-mode-fields" class="text-sm font-bold text-brand-teal flex items-center gap-2 hover:text-brand-dark transition-colors">
                                 <i data-lucide="sliders-horizontal" class="w-5 h-5"></i> Ajustes de Entorno Físico (Opcional)
                             </button>
                             <div id="expert-mode-fields" class="hidden mt-4 p-5 bg-slate-50 border border-slate-200/80 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -549,12 +576,12 @@
                     <div id="step-4" class="wizard-step">
                         <div class="mb-6">
                             <h3 class="text-xl font-extrabold text-brand-dark mb-2">Exposición dérmica (estimación orientativa)</h3>
-                            <p class="text-sm text-slate-500">Seleccione la Unidad DEO (Dermal Exposure Operation) que mejor describa la interacción física del trabajador con el producto.</p>
+                            <p class="text-sm text-slate-500">Seleccione la tarea que mejor describa la interacción física del trabajador con el producto. Es una estimación orientativa de prioridad dérmica.</p>
                         </div>
 
                         <div class="bg-white/60 p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-3xl mx-auto">
-                            <label class="block text-sm font-bold text-brand-dark mb-4">Categoría de Tarea Estandarizada</label>
-                            <select name="dermal_task" class="input-field !text-base !py-4" size="6" style="height: auto;">
+                            <label for="dermal_task" class="block text-sm font-bold text-brand-dark mb-4">Categoría de tarea</label>
+                            <select name="dermal_task" id="dermal_task" class="input-field !text-base !py-4">
                                 <optgroup label="Manipulación Directa">
                                     <option value="contam_solids">Manejo de objetos contaminados con polvo/sólidos</option>
                                     <option value="contam_liquids">Manejo de objetos húmedos/contaminados con líquidos</option>
@@ -590,7 +617,7 @@
                                 <i data-lucide="shield-alert" class="w-12 h-12"></i>
                             </div>
                             <h3 class="text-2xl font-extrabold text-brand-dark mb-3">Definición de Controles Actuales</h3>
-                            <p class="text-slate-500 mb-8 font-medium">Para determinar el Riesgo Residual con exactitud, indique qué tecnología de control principal está implementada <b>actualmente</b> en el puesto de trabajo.</p>
+                            <p class="text-slate-600 mb-8 font-medium">Seleccione la tecnología de control actualmente declarada. El sistema muestra una brecha orientativa: la suficiencia y eficacia de los controles deben verificarse en el puesto de trabajo.</p>
                             
                             <div class="text-left bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
                                 <label class="block text-sm font-bold text-brand-dark mb-3">Nivel Tecnológico Implementado</label>
@@ -604,6 +631,18 @@
                             </div>
                         </div>
 
+                        <fieldset class="evidence-panel mt-7 text-left">
+                            <legend class="evidence-legend">Plan de trabajo y verificación de controles</legend>
+                            <div class="space-y-4">
+                                <div><label for="planAction">Acciones propuestas y prioridad</label><textarea id="planAction" name="planAction" class="input-field" maxlength="4000" rows="3" placeholder="Sustitución, controles técnicos y otras acciones por verificar"></textarea></div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="planOwner">Responsable de implementación</label><input id="planOwner" name="planOwner" class="input-field" type="text" maxlength="180" placeholder="Cargo o persona responsable"></div>
+                                    <div><label for="planDue">Fecha objetivo</label><input id="planDue" name="planDue" class="input-field" type="date"></div>
+                                </div>
+                                <div><label for="planEvidence">Evidencia para verificar eficacia de los controles</label><textarea id="planEvidence" name="planEvidence" class="input-field" maxlength="4000" rows="2" placeholder="Inspección, medición, mantenimiento, revisión técnica"></textarea></div>
+                                <div><label for="planNotes">Observaciones técnicas y limitaciones</label><textarea id="planNotes" name="planNotes" class="input-field" maxlength="4000" rows="2"></textarea></div>
+                            </div>
+                        </fieldset>
                         <div class="mt-10 flex justify-between items-center border-t border-slate-200/60 pt-8">
                             <button type="button" data-wizard-action="prev" class="flex items-center gap-2 text-slate-500 hover:text-brand-dark px-4 py-2 font-bold transition-colors">
                                 <i data-lucide="arrow-left" class="w-5 h-5"></i> Anterior
@@ -618,6 +657,7 @@
                 <!-- Unified Dashboard (Hidden until calculated) -->
                 <div id="resultadoEvaluacion" class="mt-14 hidden opacity-0 transition-opacity duration-500">
                     <div id="report-container" class="bg-slate-50 border border-slate-200 p-6 md:p-8 rounded-[32px] shadow-sm">
+                        <p id="res-trace" class="m-soft-note" role="status">Informe técnico orientativo · Incluye FDS, entradas, resultados y plan de trabajo.</p>
                         
                         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4 border-b border-slate-200 pb-6">
                             <div>
@@ -634,7 +674,7 @@
                                 <button id="pdf-unified-btn" class="px-5 py-2.5 text-sm font-bold text-white bg-brand-dark rounded-xl hover:bg-[#001030] transition-colors shadow-md flex items-center gap-2">
                                     <i data-lucide="file-text" class="w-4 h-4"></i> Reporte PDF
                                 </button>
-                                <button id="reset-eval-btn" class="px-4 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                                <button id="reset-eval-btn" type="button" title="Nueva evaluación" aria-label="Nueva evaluación: limpiar formulario" class="px-4 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -665,8 +705,8 @@
                                         <p class="text-4xl font-black text-brand-teal" id="res-inh-req">1</p>
                                     </div>
                                     <div class="text-right flex flex-col items-end">
-                                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Riesgo Residual</p>
-                                        <span id="res-inh-resid" class="status-badge bg-green-100 text-green-700">Controlado</span>
+                                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Brecha preliminar de control</p>
+                                        <span id="res-inh-resid" class="status-badge bg-green-100 text-green-700">Por verificar</span>
                                     </div>
                                 </div>
                             </div>
@@ -750,6 +790,11 @@
                     <p class="text-slate-500 mt-2 font-medium">Consulta evaluaciones guardadas localmente en este dispositivo. No hay sincronización ni cifrado del historial: evita almacenar datos sensibles en equipos compartidos.</p>
                 </div>
                 
+                <div class="evidence-toolbar mb-4" role="group" aria-label="Portabilidad del historial">
+                    <button id="export-history-btn" type="button" class="evidence-action">Exportar historial JSON</button>
+                    <button id="import-history-btn" type="button" class="evidence-action">Importar historial JSON</button>
+                    <input id="import-history-file" class="sr-only" type="file" accept=".json,application/json" tabindex="-1" aria-label="Archivo de historial Control Banding">
+                </div>
                 <div class="m-soft-note m-amber-note" id="legacy-history-note" hidden>Si utilizaste esta versión antes del inicio de sesión, puedes importar tus evaluaciones antiguas. Los cálculos previos no se actualizan automáticamente; debes reevaluar su vigencia.
                     <button id="import-legacy-history" type="button" class="m-logout ml-3">Importar historial antiguo</button>
                 </div>
@@ -783,7 +828,7 @@
             <div id="sustitucion" class="tab-content">
                 <div class="mb-10">
                     <h2 class="text-3xl font-extrabold text-brand-dark">Sustitución Multi-Criterio</h2>
-                    <p class="text-slate-500 mt-2 font-medium">Verifique si un químico alternativo reduce el riesgo global (Inhalatorio + Dérmico) comparado con el químico base.</p>
+                    <p class="text-slate-500 mt-2 font-medium">Compare peligros de alternativas. Una banda más baja no garantiza una sustitución segura: evalúe exposición, tareas y controles con sus respectivas FDS.</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -825,7 +870,7 @@
             <div id="compatibilidad" class="tab-content">
                 <div class="mb-10">
                     <h2 class="text-3xl font-extrabold text-brand-dark">Compatibilidad de Almacenamiento</h2>
-                    <p class="text-slate-500 mt-2 font-medium">Determine si dos productos químicos pueden almacenarse juntos basándose en sus frases H o clasificación SGA.</p>
+                    <p class="text-slate-500 mt-2 font-medium">Identifica alertas preliminares a partir de frases H. Un resultado sin alertas <strong>no demuestra compatibilidad</strong>: consulta las secciones 7 y 10 de ambas FDS.</p>
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -903,12 +948,13 @@
                     <div class="bg-brand-dark/5 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-8 text-brand-dark">
                         <i data-lucide="file-check-2" class="w-12 h-12"></i>
                     </div>
-                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Consultar Registro Local del Informe</h2>
+                    <h2 class="text-3xl font-extrabold text-brand-dark mb-4">Consultar código registrado en este navegador</h2>
                     <p class="text-slate-500 mb-10 font-medium text-lg leading-relaxed">Introduzca el identificador de un informe generado en este navegador. Esta consulta local no demuestra autenticidad ni integridad documental.</p>
                     
                     <div class="flex max-w-lg mx-auto shadow-xl rounded-2xl overflow-hidden border border-slate-200 focus-within:ring-4 focus-within:ring-brand-teal/30 focus-within:border-brand-teal transition-all">
-                        <input type="text" id="report-code-input" class="flex-1 border-0 bg-white/90 px-6 py-4 text-lg font-medium text-brand-dark focus:outline-none" placeholder="CB-...">
-                        <button id="verify-report-btn" class="bg-brand-dark hover:bg-brand-teal text-white px-8 py-4 font-extrabold transition-colors">Verificar</button>
+                        <label for="report-code-input" class="sr-only">Identificador del informe local</label>
+                        <input type="text" id="report-code-input" maxlength="100" class="flex-1 min-w-0 border-0 bg-white/90 px-3 sm:px-6 py-4 text-base sm:text-lg font-medium text-brand-dark focus:outline-none" placeholder="EV-...">
+                        <button type="button" id="verify-report-btn" class="bg-brand-dark hover:bg-brand-teal text-white px-4 sm:px-8 py-4 font-extrabold transition-colors">Consultar</button>
                     </div>
                     <div id="verification-result" class="mt-12"></div>
                  </div>
@@ -973,8 +1019,9 @@
             const state = {
                 currentStep: 1,
                 wizardTotalSteps: 5,
+                apiPending: 0,
                 apiCache: {},
-                unifiedResult: null, mixResult: null // La mezcla exige validación antes de continuar
+                unifiedResult: null, mixResult: null, editingId: null, restoring:false // Resultado y edición separados
             };
 
             function escapeHTML(value) {
@@ -1071,15 +1118,66 @@
             const HistoryManager = {
                 get key() { return 'sst_evaluations_history_' + AuthGate.userId(); },
                 save(evaluation) {
-                    const hist = this.getAll();
-                    evaluation.id = `EV-${Date.now()}`;
-                    evaluation.timestamp = new Date().toISOString();
+                    if(!AuthGate.isReady())return UI.showToast('Debes iniciar sesión para guardar.','error');
+                    const hist=this.getAll();
+                    const now=new Date().toISOString();
+                    if(!evaluation.id) evaluation.id='EV-'+crypto.randomUUID();
+                    const found=hist.findIndex(e=>e.id===evaluation.id);
+                    evaluation.timestamp=found>=0?hist[found].timestamp:now;
+                    evaluation.updatedAt=now;
+                    if(found>=0)hist.splice(found,1);
                     hist.unshift(evaluation);
-                    localStorage.setItem(this.key, JSON.stringify(hist));
+                    try {localStorage.setItem(this.key,JSON.stringify(hist));}
+                    catch {return UI.showToast('No se pudo guardar: almacenamiento del navegador lleno o deshabilitado. Exporta tu historial.','error');}
+                    state.editingId=null;
                     this.renderList();
-                    UI.showToast("Evaluación guardada en Historial", "success");
+                    UI.showToast(found>=0?'Evaluación actualizada y guardada.':'Evaluación guardada en este navegador.','success');
                 },
-                getAll() { try { const items=JSON.parse(localStorage.getItem(this.key)); return Array.isArray(items)?items:[]; } catch { return []; } },
+                getAll() {
+                    try {const items=JSON.parse(localStorage.getItem(this.key));return Array.isArray(items)?items:[];}
+                    catch {return [];}
+                },
+                exportAll() {
+                    if(!AuthGate.isReady())return;
+                    try{
+                        const records=this.getAll();
+                        const data=ControlBandingEvidence.envelope(AuthGate.userId(),records);
+                        ControlBandingEvidence.downloadText(JSON.stringify(data,null,2),ControlBandingEvidence.filenameBase()+'-historial.json');
+                        UI.showToast('Historial exportado. Guarda el archivo en un lugar protegido.','success');
+                    }catch(err){UI.showToast(err.message||'No se pudo exportar el historial.','error');}
+                },
+                async importJSON(file) {
+                    if(!file)return;
+                    if(!AuthGate.isReady())return UI.showToast('Sesión no validada.','error');
+                    try{
+                        if(file.size>2_000_000)throw new Error('El archivo supera 2 MB.');
+                        const data=ControlBandingEvidence.parseEnvelope(await file.text(),AuthGate.userId());
+                        const current=this.getAll();
+                        const ids=new Set(current.map(e=>e.id));
+                        const newOnes=data.filter(e=>!ids.has(e.id));
+                        if(!newOnes.length)return UI.showToast('No hay registros nuevos para importar.','info');
+                        if(!window.confirm('Se importarán '+newOnes.length+' evaluaciones a este navegador. ¿Confirmas que el archivo es de tu propiedad?'))return;
+                        localStorage.setItem(this.key,JSON.stringify([...current,...newOnes]));
+                        this.renderList();
+                        UI.showToast(newOnes.length+' evaluaciones importadas.','success');
+                    }catch(e){UI.showToast(e.message||'No se pudo importar el archivo.','error');}
+                },
+                loadToEdit(id) {
+                    const found=this.getAll().find(e=>e.id===id);
+                    if(!found)return UI.showToast('Evaluación no encontrada.','error');
+                    if(!found.input?.fields)return UI.showToast('Registro histórico sin entradas recuperables: conserva el informe y crea una evaluación nueva.','error');
+                    if(!window.confirm('¿Abrir esta evaluación para editar? Se conservará el registro original hasta que recalcules y pulses Guardar.'))return;
+                    try{
+                        state.restoring=true;
+                        ControlBandingEvidence.restore(document.getElementById('unifiedBandingForm'),found.input,Handlers.addMixtureComponent);
+                        state.editingId=id;state.unifiedResult=null;state.mixResult=null;
+                        document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
+                        UI.changeTab('evaluacion_unificada');
+                        UI.showStep(1);
+                        UI.showToast('Entradas restauradas. Recalcula la mezcla, si corresponde, y después la evaluación.','info');
+                    }catch(e){UI.showToast('No se pudo abrir la evaluación: '+e.message,'error');}
+                    finally{state.restoring=false;Storage.save();}
+                },
                 importLegacy() {
                     let old=[];
                     try {old=JSON.parse(localStorage.getItem('sst_evaluations_history')||'[]');}catch{}
@@ -1142,8 +1240,9 @@
                                 <span class="bg-slate-100 text-brand-dark px-2 py-1 rounded font-black text-xs">Score ${escapeHTML(d.dermico.riskScore)}/10</span>
                             </td>
                             <td class="px-6 py-4 text-center opacity-100 flex justify-center gap-2">
-                                <button type="button" data-hist-action="load" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
-                                <button type="button" data-hist-action="delete" data-id="${escapeHTML(d.id)}" class="text-red-600 hover:text-red-800" title="Eliminar"><i data-lucide="trash" class="w-5 h-5"></i></button>
+                                <button type="button" data-hist-action="load" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" aria-label="Ver evaluación ${escapeHTML(d.inhalatorio.name)}"><i data-lucide="eye" class="w-5 h-5" aria-hidden="true"></i></button>
+                                <button type="button" data-hist-action="edit" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" aria-label="Editar entradas de ${escapeHTML(d.inhalatorio.name)}" ${d.input?.fields?'':'disabled title="Registro sin entradas editables"'}><i data-lucide="pencil" class="w-5 h-5" aria-hidden="true"></i></button>
+                                <button type="button" data-hist-action="delete" data-id="${escapeHTML(d.id)}" class="text-red-600 hover:text-red-800" aria-label="Eliminar evaluación de ${escapeHTML(d.inhalatorio.name)}"><i data-lucide="trash" class="w-5 h-5"></i></button>
                             </td>
                         </tr>
                     `).join('');
@@ -1153,39 +1252,34 @@
 
             // --- PERSISTENCIA (DRAFT) --- 
             const Storage = {
-                save() {
-                    const form = document.getElementById('unifiedBandingForm');
-                    if (!form) return;
-                    const fd = new FormData(form);
-                    const data = Object.fromEntries(fd.entries());
-                    const is_cmr = document.getElementById('is_cmr');
-                    const is_nano = document.getElementById('is_nano');
-                    if (is_cmr) data.is_cmr = is_cmr.checked;
-                    if (is_nano) data.is_nano = is_nano.checked;
-                    localStorage.setItem('sst_draft_' + AuthGate.userId(), JSON.stringify(data));
+                get key(){return 'sst_draft_'+AuthGate.userId();},
+                save(){
+                    if(state.restoring||!AuthGate.isReady())return;
+                    try{
+                        const form=document.getElementById('unifiedBandingForm');if(!form)return;
+                        const snapshot=ControlBandingEvidence.capture(form);
+                        localStorage.setItem(this.key,JSON.stringify({schema:3,snapshot,step:state.currentStep,savedAt:new Date().toISOString()}));
+                        const status=document.getElementById('draft-status');
+                        if(status)status.textContent='Borrador local guardado · '+new Date().toLocaleTimeString();
+                    }catch{const status=document.getElementById('draft-status');if(status)status.textContent='No se pudo guardar el borrador en este dispositivo.';}
                 },
-                load() {
-                    const data = JSON.parse(localStorage.getItem('sst_draft_' + AuthGate.userId()));
-                    if(!data) return;
-                    Object.keys(data).forEach(k => {
-                         if(k==='product_type'){
-                             const radio=[...document.querySelectorAll('input[name="product_type"]')].find(r=>r.value===data[k]);
-                             if(radio)radio.checked=true;
-                             return;
-                         }
-                        const el = document.getElementsByName(k)[0];
-                        if(el) {
-                            if(el.type === 'checkbox') el.checked = data[k];
-                            else el.value = data[k];
-                        }
-                    });
-                    const estadoFisico = document.getElementById('estado_fisico');
-                    if (estadoFisico) estadoFisico.dispatchEvent(new Event('change'));
-                     document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
+                load(){
+                    try{
+                        const raw=localStorage.getItem(this.key);if(!raw)return UI.showToast('No hay borrador para recuperar.','error');
+                        const data=JSON.parse(raw);
+                        const snapshot=data?.schema===3?data.snapshot:data;
+                        state.restoring=true;
+                        ControlBandingEvidence.restore(document.getElementById('unifiedBandingForm'),snapshot,Handlers.addMixtureComponent);
+                        state.mixResult=null;state.unifiedResult=null;state.editingId=null;
+                        document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
+                        state.restoring=false;
+                        // No saltar validaciones de pasos previos al recuperar un borrador.
+                        UI.showStep(1);
+                        UI.showToast('Borrador y componentes restaurados. Recalcula la mezcla antes de avanzar.','success');
+                    }catch(e){UI.showToast('No se pudo recuperar el borrador: '+e.message,'error');}
+                    finally{state.restoring=false;}
                 },
-                clear() {
-                    localStorage.removeItem('sst_draft_' + AuthGate.userId());
-                }
+                clear(){localStorage.removeItem(this.key);const st=document.getElementById('draft-status');if(st)st.textContent='Borrador eliminado de este navegador.';}
             };
 
             // --- INTERFAZ UI ---
@@ -1226,6 +1320,7 @@
                                           : 'tab flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-100/50 hover:text-brand-dark transition-all';
                     });
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === tabId));
+                    ControlBandingA11y.syncTabs(tabId);
                     if(tabId === 'historial') HistoryManager.renderList();
                     if(tabId === 'sustitucion' && state.unifiedResult) {
                         const info = document.getElementById('current-product-info');
@@ -1246,18 +1341,22 @@
                     }
                 },
                 showStep(step) {
+                    if(step<1||step>state.wizardTotalSteps)return false;
+                    ControlBandingA11y.clearError();
                     if(step > state.currentStep) {
                         const currentDiv = document.getElementById(`step-${state.currentStep}`);
                         if (currentDiv) {
                             if(state.currentStep===2) {
+                                if(state.apiPending>0){ControlBandingA11y.error('La consulta de identificación química todavía está en curso.',null);return false;}
                                 const isMix=document.querySelector('input[name="product_type"]:checked')?.value==='mezcla';
                                 if(isMix && !state.mixResult) {
-                                    this.showToast('Calcule una mezcla con componentes y frases H válidas antes de avanzar.', 'error');
+                                    ControlBandingA11y.error('Calcule una mezcla con componentes y frases H válidas antes de avanzar.',document.getElementById('calculate-mixture-btn'));
+                                    this.showToast('Calcule una mezcla válida antes de continuar.', 'error');
                                     return false;
                                 }
                                 if(!isMix) {
                                     try { ControlBandingMethod.codes(document.getElementById('h_phrases')?.value,true); }
-                                    catch(err) { this.showToast(err.message,'error'); return false; }
+                                    catch(err) { ControlBandingA11y.error(err.message,document.getElementById('h_phrases'));this.showToast(err.message,'error'); return false; }
                                 }
                             }
                             const reqs = currentDiv.querySelectorAll('[required]');
@@ -1265,6 +1364,7 @@
                                 if(!r.value && !r.closest('.hidden')) {
                                     r.classList.add('input-error');
                                     setTimeout(()=>r.classList.remove('input-error'),2000);
+                                    ControlBandingA11y.error("Complete el campo obligatorio antes de continuar.",r);
                                     this.showToast("Complete los campos obligatorios (*)", "error");
                                     return false;
                                 }
@@ -1278,6 +1378,7 @@
 
                     const pb = document.getElementById('progressBar');
                     if (pb) pb.style.width = `${(step/state.wizardTotalSteps)*100}%`;
+                    ControlBandingA11y.syncWizard(step,true);
                     
                     for(let i=1; i<=5; i++) {
                         const lbl = document.getElementById(`step-label-${i}`);
@@ -1307,6 +1408,12 @@
                     
                     const elName = document.getElementById('res-chemical-name');
                     const elInfo = document.getElementById('res-eval-info');
+                    const trace = document.getElementById('res-trace');
+                    if(trace)trace.textContent = 'Evaluación '+(res.id||'histórica')+
+                        ' · FDS: '+(res.input?.fields?.fdSource||'no documentada')+
+                        ' · Revisión: '+(res.input?.fields?.fdRevision||'no documentada')+
+                        ' · Motor: '+(res.methodVersion||'no identificado')+
+                        '. Informe orientativo, sujeto a verificación profesional.';
                     if (elName) elName.textContent = res.inhalatorio.name;
                     if (elInfo) elInfo.textContent = `${res.context.process} | ${res.context.date}`;
                     
@@ -1318,11 +1425,11 @@
                     if(elInhReq) elInhReq.textContent = res.inhalatorio.controlReq;
                     
                     const residMap = {
-                        1: {c: 'bg-red-100 text-red-700', t: 'Inaceptable'},
-                        0: {c: 'bg-brand-yellow/20 text-yellow-700', t: 'Moderado'},
+                        1: {c: 'bg-red-100 text-red-700', t: 'Brecha declarada'},
+                        0: {c: 'bg-brand-yellow/20 text-yellow-800', t: 'Requiere verificar'},
                         '-1': {c: 'bg-green-100 text-green-700', t: 'Por verificar'},
-                        '-2': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
-                        '-3': {c: 'bg-green-100 text-green-700', t: 'Controlado'},
+                        '-2': {c: 'bg-brand-teal/10 text-brand-teal', t: 'Por verificar'},
+                        '-3': {c: 'bg-brand-teal/10 text-brand-teal', t: 'Por verificar'},
                     };
                     const diff = res.inhalatorio.controlReq === 4 ? 1 : res.inhalatorio.controlReq - res.context.existControl;
                     const resSt = diff > 0 ? residMap[1] : (diff === 0 ? residMap[0] : residMap['-1']);
@@ -1343,9 +1450,9 @@
                     if(elDerExp) elDerExp.textContent = eText[res.dermico.expLvl] || 'Indeterminada';
                     if(elDerScore) elDerScore.textContent = res.dermico.riskScore;
                     
-                    let dCrit = {c: 'bg-red-100 text-red-700', t:'Inaceptable'};
+                    let dCrit = {c: 'bg-red-100 text-red-700', t:'Prioridad alta'};
                     if(res.dermico.riskScore <=3) dCrit={c:'bg-brand-teal/10 text-brand-teal', t:'Prioridad orientativa baja'};
-                    else if(res.dermico.riskScore <=6) dCrit={c:'bg-brand-yellow/20 text-yellow-700', t:'Mejorar'};
+                    else if(res.dermico.riskScore <=6) dCrit={c:'bg-brand-yellow/20 text-yellow-700', t:'Prioridad media'};
                     
                     const elDerCrit = document.getElementById('res-der-crit');
                     if (elDerCrit) {
@@ -1353,31 +1460,21 @@
                         elDerCrit.textContent = dCrit.t;
                     }
 
-                    const inhRec = {
-                        1: 'Ventilación General y Limpieza frecuente. Uso de EPI básico.',
-                        2: 'Extracción Localizada (VEL) operativa indispensable. Protección respiratoria.',
-                        3: 'Proceso confinado (Cabinas). Sistemas cerrados. Alta supervisión.',
-                        4: 'Detener y consultar especialista. Modificar diseño de ingeniería.'
-                    };
-                    
+                    const recommendations=ControlBandingReport.recommendations(res.inhalatorio.controlReq,res.dermico.riskScore);
                     const planInh = document.getElementById('plan-inhalatorio');
                     if (planInh) {
                         planInh.innerHTML = `
                             <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-teal"></i> Inhalatorio (Nivel ${res.inhalatorio.controlReq})</h4>
-                            <p class="text-sm mt-2 text-slate-600 font-medium">${inhRec[res.inhalatorio.controlReq] || 'Sin datos'}</p>
+                            <p class="text-sm mt-2 text-slate-600 font-medium">${recommendations.inhalatoria}</p>
                         `;
                     }
 
-                    const derRec = {
-                        1: 'Higiene básica.', 2: 'Guantes estándar.', 3: 'Disminuir exposición técnica/organizativa.', 4: 'Obligatorio aislar/guantes químicos.', 5: 'Reducir toxicidad.',
-                        6: 'Obligatorias medidas preventivas fuertes.', 7: 'Urgente reducción exposición.', 8: 'Aconsejar sustitución.', 9: 'Detener y rediseñar.', 10: 'Sustitución imprescindible.'
-                    };
-                    
+                    // El informe PDF y la pantalla comparten exactamente las recomendaciones.
                     const planDer = document.getElementById('plan-dermico');
                     if (planDer) {
                         planDer.innerHTML = `
                             <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="hand" class="w-4 h-4 text-brand-yellow"></i> Dérmico (Score ${res.dermico.riskScore})</h4>
-                            <p class="text-sm mt-2 text-slate-600 font-medium">${derRec[res.dermico.riskScore] || 'Sin datos'}</p>
+                            <p class="text-sm mt-2 text-slate-600 font-medium">${recommendations.dermica}</p>
                         `;
                     }
                     
@@ -1404,12 +1501,16 @@
                         document.getElementById('mix_banda_inh').value='';
                         document.getElementById('mix_score_der').value='';
                         document.getElementById('mixture-result').classList.add('hidden');
+                        const note=document.getElementById('methodology-note');if(note)note.hidden=true;
                     };
                     row.addEventListener('input',invalidate);
                     row.querySelector('.mix-delete').addEventListener('click',()=>{row.remove();invalidate();});
                     row.querySelector('.mix-cas').addEventListener('blur',async e=>{
                         const cas=e.target.value.trim();if(!cas)return;
-                        const chemical=await ApiService.getChemicalData(cas);
+                        state.apiPending++;
+                        let chemical=null;
+                        try{chemical=await ApiService.getChemicalData(cas);}
+                        finally{state.apiPending--; }
                         if(chemical?.hPhrases?.length){
                             row.querySelector('.mix-h').value=chemical.hPhrases.join(', ');
                             invalidate();
@@ -1422,6 +1523,7 @@
                     const btn=document.getElementById('calculate-mixture-btn');
                     if(btn)btn.disabled=true;
                     try{
+                        if(state.apiPending>0)throw new Error('La consulta de CAS aún no ha terminado. Vuelve a calcular al finalizar.');
                         const items=[...document.querySelectorAll('#mixture-components > div')].map(row=>({
                             phrases:row.querySelector('.mix-h')?.value||'',
                             concentration:row.querySelector('.mix-conc')?.value||''
@@ -1436,6 +1538,7 @@
                         let note=document.getElementById('methodology-note');
                         if(!note){note=document.createElement('p');note.id='methodology-note';note.className='m-soft-note m-amber-note';box.insertAdjacentElement('afterend',note);}
                         note.textContent=result.notice+(result.requiresExpert?' H334: confirme umbrales y solicite revisión especializada.':'');
+                        note.hidden=false;
                         UI.showToast('Cribado de mezcla calculado. Verifique la FDS.','success');
                     }catch(err){
                         state.mixResult=null;
@@ -1459,6 +1562,8 @@
                         const form = document.getElementById('unifiedBandingForm');
                         const fd = new FormData(form);
                         const data = Object.fromEntries(fd.entries());
+                        if(state.apiPending>0)throw new Error('Aún se consultan datos químicos. Finaliza la consulta antes de evaluar.');
+                        const evidence = ControlBandingEvidence.validate(ControlBandingEvidence.capture(form),ControlBandingMethod);
                         const isPura = data.product_type === 'pura';
                         
                         let name = isPura ? data.chemical_name_pura : data.chemical_name_mezcla;
@@ -1495,9 +1600,13 @@
                         const rDer = Calculator.getDermalRiskScore(scoreDer, expDer);
 
                         state.unifiedResult = {
+                            id:state.editingId||('EV-'+crypto.randomUUID()),
+                            timestamp:new Date().toISOString(),
+                            methodVersion:ControlBandingMethod.version,
+                            input:evidence,
                             context: { company: data.companyName, process: data.process, date: data.evalDate, existControl: parseInt(data.controles_existentes), estado: data.estado_fisico, cantidad:data.cantidad_utilizada, propiedad:propInh, metodo:'COSHH HSE 2019', estimacionDer:'orientativa' },
-                            inhalatorio: { name: name||'Sin Nombre', band: bandInh, exp: expInh, controlReq: cReq },
-                            dermico: { hazardLvl: scoreDer, expLvl: expDer, riskScore: rDer }
+                            inhalatorio: { name:name.trim(), band:bandInh, exp:expInh, controlReq:cReq },
+                            dermico: { hazardLvl:scoreDer, expLvl:expDer, riskScore:rDer }
                         };
 
                         UI.renderUnifiedDashboard();
@@ -1507,8 +1616,9 @@
                             setTimeout(()=> { resD.classList.remove('opacity-0'); resD.scrollIntoView({behavior:'smooth'}); }, 50);
                         }
 
-                    } catch (err) { 
-                        console.error(err); 
+                    } catch (err) {
+                        console.error(err);
+                        ControlBandingA11y.error(err?.message||"No se pudo procesar la evaluación.",null);
                         UI.showToast(err?.message || "No se pudo procesar la evaluación", "error"); 
                     } finally { 
                         if(btn) {
@@ -1598,48 +1708,37 @@
                     }
                 },
 
-                genPDF() {
-                    if(!state.unifiedResult) return;
-                    UI.showToast("Generando informe orientativo...");
-                    try {
-                        const doc = new jsPDF({format: 'a4'});
-                        const cd = `CB-${Date.now().toString().slice(-8)}`;
-                        const res = state.unifiedResult;
-
-                        doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(0,0,0);
-                        doc.text('INFORME DE CRIBADO - CONTROL BANDING', 15, 20);
-                        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-                        doc.text(`ID local: ${cd} | La Movida de SST+ | Resultado orientativo`, 15, 28);
-
-                        doc.autoTable({
-                            startY: 35,
-                            head: [['Datos', '']],
-                            body: [ ['Empresa / Evaluador', `${res.context.company} / Eval.`], ['Proceso', `${res.context.process}`], ['Químico', res.inhalatorio.name] ],
-                            theme: 'grid', styles: {textColor: 0, lineColor: 0, lineWidth: 0.5}, headStyles: {fillColor: 50, textColor: 255}
-                        });
-
-                        let y = doc.autoTable.previous.finalY + 15;
-                        doc.setFillColor(240); doc.rect(15, y, 85, 40, 'FD'); doc.rect(110, y, 85, 40, 'FD');
-                        
-                        // Inh Box
-                        doc.setFont('helvetica', 'bold'); doc.text('RIESGO INHALATORIO', 20, y+8);
-                        doc.setFont('helvetica', 'normal');
-                        doc.text(`Banda: ${res.inhalatorio.band}`, 20, y+18);
-                        doc.text(`Exp: EP${res.inhalatorio.exp}`, 20, y+26);
-                        doc.setFont('helvetica', 'bold'); doc.text(`Ctrl Req: Nivel ${res.inhalatorio.controlReq}`, 20, y+35);
-
-                        // Der Box
-                        doc.setFont('helvetica', 'bold'); doc.text('RIESGO DÉRMICO', 115, y+8);
-                        doc.setFont('helvetica', 'normal');
-                        doc.text(`Peligro (1-5): Nvl ${res.dermico.hazardLvl}`, 115, y+18);
-                        doc.text(`Exp (1-4): Nvl ${res.dermico.expLvl}`, 115, y+26);
-                        doc.setFont('helvetica', 'bold'); doc.text(`Riesgo Global: ${res.dermico.riskScore}/10`, 115, y+35);
-
-                        doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('No certifica exposición segura ni sustituye la FDS ni una evaluación profesional.', 15, 285);
-                         doc.save(`SST_Eval_${cd}.pdf`);
-                        const vf = JSON.parse(localStorage.getItem('sst_verified_' + AuthGate.userId())||'{}');
-                        vf[cd] = new Date().toISOString(); localStorage.setItem('sst_verified_' + AuthGate.userId(), JSON.stringify(vf));
-                    } catch(e) { console.error(e); UI.showToast("Error en PDF", "error"); }
+                async genPDF() {
+                    if(!state.unifiedResult)return UI.showToast('Primero procesa una evaluación.','error');
+                    const res=state.unifiedResult;
+                    if(!res.input?.fields)return UI.showToast('El informe histórico carece de entradas completas. Reevalúa para generar un informe nuevo.','error');
+                    if(!await AuthGate.ensureSession())return;
+                    try{
+                        const doc=new jsPDF({format:'a4',unit:'mm'});
+                        // El logo se utiliza cuando el navegador permite leerlo sin violar CORS.
+                        let logoData=null;
+                        try{
+                            const image=new Image();
+                            image.crossOrigin='anonymous';
+                            await new Promise((resolve,reject)=>{
+                                image.onload=resolve;image.onerror=reject;
+                                image.src='https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp';
+                                setTimeout(()=>reject(new Error('Logo no accesible')),2500);
+                            });
+                            const canvas=document.createElement('canvas');
+                            canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+                            canvas.getContext('2d').drawImage(image,0,0);
+                            logoData=canvas.toDataURL('image/webp');
+                        }catch{logoData=null;}
+                        const details=ControlBandingReport.render(doc,res,{logoData});
+                        doc.save('Control_Banding_'+String(res.id||'evaluacion').replace(/[^A-Za-z0-9_-]/g,'')+'.pdf');
+                        const key='sst_verified_'+AuthGate.userId();
+                        let verified={};
+                        try{verified=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
+                        verified[res.id]=new Date().toISOString();
+                        localStorage.setItem(key,JSON.stringify(verified));
+                        UI.showToast('Informe generado con '+details.pages+' página(s), entradas, fuentes y plan.','success');
+                    }catch(err){console.error(err);UI.showToast('No se pudo generar el PDF: '+(err.message||'error desconocido'),'error');}
                 }
             };
 
@@ -1649,10 +1748,22 @@
                 init() {
                     UI.init();
                     document.getElementById('import-legacy-history')?.addEventListener('click',()=>HistoryManager.importLegacy());
+                    document.getElementById('export-history-btn')?.addEventListener('click',()=>HistoryManager.exportAll());
+                    document.getElementById('import-history-btn')?.addEventListener('click',()=>document.getElementById('import-history-file')?.click());
+                    document.getElementById('import-history-file')?.addEventListener('change',async e=>{
+                        await HistoryManager.importJSON(e.target.files?.[0]);
+                        e.target.value='';
+                    });
+                    document.getElementById('save-draft-btn')?.addEventListener('click',()=>{
+                        Storage.save();
+                        UI.showToast('Borrador guardado con sus componentes y fuentes.','success');
+                    });
+                    document.getElementById('restore-draft-btn')?.addEventListener('click',()=>Storage.load());
                     document.getElementById('history-table-body')?.addEventListener('click',e=>{
                         const b=e.target.closest('button[data-hist-action]');
                         if(!b)return;
                         if(b.dataset.histAction==='load')HistoryManager.loadToDashboard(b.dataset.id);
+                        if(b.dataset.histAction==='edit')HistoryManager.loadToEdit(b.dataset.id);
                         if(b.dataset.histAction==='delete'&&window.confirm('¿Eliminar esta evaluación del historial local?'))HistoryManager.delete(b.dataset.id);
                     });
                     // La selección de mezcla no debe mostrar ni reutilizar campos de sustancia pura.
@@ -1664,9 +1775,16 @@
                         document.getElementById('mix_banda_inh').value='';
                         document.getElementById('mix_score_der').value='';
                         document.getElementById('mixture-result')?.classList.add('hidden');
+                        const pureH=document.getElementById('h_phrases');
+                        if(pureH)pureH.required=!mixed;
+                        const pureName=document.getElementById('chemical_name_pura');
+                        if(pureName)pureName.required=!mixed;
+                        const mixName=document.getElementById('chemical_name_mezcla');
+                        if(mixName)mixName.required=mixed;
                     };
                     document.querySelectorAll('input[name="product_type"]').forEach(r=>r.addEventListener('change',changeProductMode));
                     changeProductMode();
+                    ControlBandingA11y.init({onTab:id=>UI.changeTab(id)});
                     
                     document.getElementById('tab-navigation')?.addEventListener('click', e => {
                         const t = e.target.closest('.tab');
@@ -1687,7 +1805,9 @@
                     });
 
                     document.getElementById('toggle-expert-mode')?.addEventListener('click', () => {
-                        document.getElementById('expert-mode-fields')?.classList.toggle('hidden');
+                        const fields=document.getElementById('expert-mode-fields');
+                        fields?.classList.toggle('hidden');
+                        document.getElementById('toggle-expert-mode')?.setAttribute('aria-expanded',String(!fields?.classList.contains('hidden')));
                     });
 
                     document.getElementById('estado_fisico')?.addEventListener('change', e => {
@@ -1706,7 +1826,10 @@
                                 if(!cas||!box) return;
                                 box.innerHTML = `<span class="text-xs text-brand-teal"><i data-lucide="loader" class="w-3 h-3 animate-spin inline"></i> Buscando...</span>`;
                                 lucide.createIcons();
-                                const data = await ApiService.getChemicalData(cas);
+                                state.apiPending++;
+                                let data=null;
+                                try{data=await ApiService.getChemicalData(cas);}
+                                finally{state.apiPending--;}
                                 if(data) {
                                     box.innerHTML = `<span class="text-xs text-brand-green font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> ${escapeHTML(data.name)}</span>`;
                                     if(id==='cas_number') {
@@ -1725,10 +1848,18 @@
                     });
 
                     document.getElementById('unifiedBandingForm')?.addEventListener('submit', Handlers.submitUnified);
-                    document.getElementById('unifiedBandingForm')?.addEventListener('input', ()=>{
+                    const evalForm=document.getElementById('unifiedBandingForm');
+                    let autosaveTimer;
+                    const markChanged=()=>{
+                        if(state.restoring)return;
                         state.unifiedResult=null;
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
-                    });
+                        clearTimeout(autosaveTimer);
+                        autosaveTimer=setTimeout(()=>Storage.save(),450);
+                    };
+                    evalForm?.addEventListener('input',markChanged);
+                    evalForm?.addEventListener('change',markChanged);
+                    window.addEventListener('pagehide',()=>{clearTimeout(autosaveTimer);Storage.save();});
                     document.getElementById('add-component-btn')?.addEventListener('click', Handlers.addMixtureComponent);
                     document.getElementById('calculate-mixture-btn')?.addEventListener('click', Handlers.calcMixture);
                     document.getElementById('save-history-btn')?.addEventListener('click', () => {
@@ -1743,8 +1874,11 @@
                         document.getElementById('unifiedBandingForm')?.reset();
                         document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
                         state.unifiedResult = null;
+                        state.editingId=null;state.mixResult=null;
+                        document.getElementById('mixture-components')?.replaceChildren();
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         UI.showStep(1);
+                        Storage.clear();
                     });
 
                     document.getElementById('clear-form-btn')?.addEventListener('click', () => {
@@ -1752,9 +1886,12 @@
                         document.getElementById('unifiedBandingForm')?.reset();
                         document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
                         state.unifiedResult = null;
+                        state.editingId=null;state.mixResult=null;
+                        document.getElementById('mixture-components')?.replaceChildren();
                         document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
                         UI.showStep(1);
-                        UI.showToast("Datos locales limpiados", "success");
+                        Storage.clear();
+                        UI.showToast("Borrador y formulario limpiados (el historial sigue guardado).", "success");
                     });
 
                     document.getElementById('verify-report-btn')?.addEventListener('click', () => {
