@@ -10,8 +10,14 @@ const expected=[
   'id="member-gate"','id="member-login-form"','name="documento"','name="codigo"',
   'id="member-logout"','id="member-name"','class="m-logo"',
   'src="auth-gate.js"','src="methodology.js"','href="theme-2026.css"',
+  'src="evaluation-evidence.js"','src="report-pdf.js"','src="accessibility.js"',
   'ControlBandingMethod.mixture(items)','ControlBandingMethod.compatibility(a.codes,b.codes)',
   'AuthGate.ensureSession()','DOMContentLoaded\', AuthGate.boot',
+  'id="fdSource"','id="fdRevision"','id="planAction"','id="planEvidence"',
+  'id="save-draft-btn"','id="restore-draft-btn"','id="export-history-btn"',
+  'id="import-history-btn"','id="wizard-errors"','id="main-content"',
+  'ControlBandingEvidence.validate(','ControlBandingReport.render(',
+  'HistoryManager.loadToEdit(','ControlBandingA11y.syncWizard(',
   "get key() { return 'sst_evaluations_history_' + AuthGate.userId(); }"
 ];
 for(const fragment of expected)assert.ok(html.includes(fragment),'Falta integración: '+fragment);
