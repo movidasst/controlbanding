@@ -1390,6 +1390,12 @@
                     
                     const elName = document.getElementById('res-chemical-name');
                     const elInfo = document.getElementById('res-eval-info');
+                    const trace = document.getElementById('res-trace');
+                    if(trace)trace.textContent = 'Evaluación '+(res.id||'histórica')+
+                        ' · FDS: '+(res.input?.fields?.fdSource||'no documentada')+
+                        ' · Revisión: '+(res.input?.fields?.fdRevision||'no documentada')+
+                        ' · Motor: '+(res.methodVersion||'no identificado')+
+                        '. Informe orientativo, sujeto a verificación profesional.';
                     if (elName) elName.textContent = res.inhalatorio.name;
                     if (elInfo) elInfo.textContent = `${res.context.process} | ${res.context.date}`;
                     
@@ -1436,31 +1442,21 @@
                         elDerCrit.textContent = dCrit.t;
                     }
 
-                    const inhRec = {
-                        1: 'Ventilación General y Limpieza frecuente. Uso de EPI básico.',
-                        2: 'Extracción Localizada (VEL) operativa indispensable. Protección respiratoria.',
-                        3: 'Proceso confinado (Cabinas). Sistemas cerrados. Alta supervisión.',
-                        4: 'Detener y consultar especialista. Modificar diseño de ingeniería.'
-                    };
-                    
+                    const recommendations=ControlBandingReport.recommendations(res.inhalatorio.controlReq,res.dermico.riskScore);
                     const planInh = document.getElementById('plan-inhalatorio');
                     if (planInh) {
                         planInh.innerHTML = `
                             <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wind" class="w-4 h-4 text-brand-teal"></i> Inhalatorio (Nivel ${res.inhalatorio.controlReq})</h4>
-                            <p class="text-sm mt-2 text-slate-600 font-medium">${inhRec[res.inhalatorio.controlReq] || 'Sin datos'}</p>
+                            <p class="text-sm mt-2 text-slate-600 font-medium">${recommendations.inhalatoria}</p>
                         `;
                     }
 
-                    const derRec = {
-                        1: 'Higiene básica.', 2: 'Guantes estándar.', 3: 'Disminuir exposición técnica/organizativa.', 4: 'Obligatorio aislar/guantes químicos.', 5: 'Reducir toxicidad.',
-                        6: 'Obligatorias medidas preventivas fuertes.', 7: 'Urgente reducción exposición.', 8: 'Aconsejar sustitución.', 9: 'Detener y rediseñar.', 10: 'Sustitución imprescindible.'
-                    };
-                    
+                    // El informe PDF y la pantalla comparten exactamente las recomendaciones.
                     const planDer = document.getElementById('plan-dermico');
                     if (planDer) {
                         planDer.innerHTML = `
                             <h4 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="hand" class="w-4 h-4 text-brand-yellow"></i> Dérmico (Score ${res.dermico.riskScore})</h4>
-                            <p class="text-sm mt-2 text-slate-600 font-medium">${derRec[res.dermico.riskScore] || 'Sin datos'}</p>
+                            <p class="text-sm mt-2 text-slate-600 font-medium">${recommendations.dermica}</p>
                         `;
                     }
                     
@@ -1542,6 +1538,7 @@
                         const form = document.getElementById('unifiedBandingForm');
                         const fd = new FormData(form);
                         const data = Object.fromEntries(fd.entries());
+                        const evidence = ControlBandingEvidence.validate(ControlBandingEvidence.capture(form),ControlBandingMethod);
                         const isPura = data.product_type === 'pura';
                         
                         let name = isPura ? data.chemical_name_pura : data.chemical_name_mezcla;
@@ -1578,9 +1575,13 @@
                         const rDer = Calculator.getDermalRiskScore(scoreDer, expDer);
 
                         state.unifiedResult = {
+                            id:state.editingId||('EV-'+crypto.randomUUID()),
+                            timestamp:new Date().toISOString(),
+                            methodVersion:ControlBandingMethod.version,
+                            input:evidence,
                             context: { company: data.companyName, process: data.process, date: data.evalDate, existControl: parseInt(data.controles_existentes), estado: data.estado_fisico, cantidad:data.cantidad_utilizada, propiedad:propInh, metodo:'COSHH HSE 2019', estimacionDer:'orientativa' },
-                            inhalatorio: { name: name||'Sin Nombre', band: bandInh, exp: expInh, controlReq: cReq },
-                            dermico: { hazardLvl: scoreDer, expLvl: expDer, riskScore: rDer }
+                            inhalatorio: { name:name.trim(), band:bandInh, exp:expInh, controlReq:cReq },
+                            dermico: { hazardLvl:scoreDer, expLvl:expDer, riskScore:rDer }
                         };
 
                         UI.renderUnifiedDashboard();
@@ -1681,48 +1682,37 @@
                     }
                 },
 
-                genPDF() {
-                    if(!state.unifiedResult) return;
-                    UI.showToast("Generando informe orientativo...");
-                    try {
-                        const doc = new jsPDF({format: 'a4'});
-                        const cd = `CB-${Date.now().toString().slice(-8)}`;
-                        const res = state.unifiedResult;
-
-                        doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(0,0,0);
-                        doc.text('INFORME DE CRIBADO - CONTROL BANDING', 15, 20);
-                        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-                        doc.text(`ID local: ${cd} | La Movida de SST+ | Resultado orientativo`, 15, 28);
-
-                        doc.autoTable({
-                            startY: 35,
-                            head: [['Datos', '']],
-                            body: [ ['Empresa / Evaluador', `${res.context.company} / Eval.`], ['Proceso', `${res.context.process}`], ['Químico', res.inhalatorio.name] ],
-                            theme: 'grid', styles: {textColor: 0, lineColor: 0, lineWidth: 0.5}, headStyles: {fillColor: 50, textColor: 255}
-                        });
-
-                        let y = doc.autoTable.previous.finalY + 15;
-                        doc.setFillColor(240); doc.rect(15, y, 85, 40, 'FD'); doc.rect(110, y, 85, 40, 'FD');
-                        
-                        // Inh Box
-                        doc.setFont('helvetica', 'bold'); doc.text('RIESGO INHALATORIO', 20, y+8);
-                        doc.setFont('helvetica', 'normal');
-                        doc.text(`Banda: ${res.inhalatorio.band}`, 20, y+18);
-                        doc.text(`Exp: EP${res.inhalatorio.exp}`, 20, y+26);
-                        doc.setFont('helvetica', 'bold'); doc.text(`Ctrl Req: Nivel ${res.inhalatorio.controlReq}`, 20, y+35);
-
-                        // Der Box
-                        doc.setFont('helvetica', 'bold'); doc.text('RIESGO DÉRMICO', 115, y+8);
-                        doc.setFont('helvetica', 'normal');
-                        doc.text(`Peligro (1-5): Nvl ${res.dermico.hazardLvl}`, 115, y+18);
-                        doc.text(`Exp (1-4): Nvl ${res.dermico.expLvl}`, 115, y+26);
-                        doc.setFont('helvetica', 'bold'); doc.text(`Riesgo Global: ${res.dermico.riskScore}/10`, 115, y+35);
-
-                        doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('No certifica exposición segura ni sustituye la FDS ni una evaluación profesional.', 15, 285);
-                         doc.save(`SST_Eval_${cd}.pdf`);
-                        const vf = JSON.parse(localStorage.getItem('sst_verified_' + AuthGate.userId())||'{}');
-                        vf[cd] = new Date().toISOString(); localStorage.setItem('sst_verified_' + AuthGate.userId(), JSON.stringify(vf));
-                    } catch(e) { console.error(e); UI.showToast("Error en PDF", "error"); }
+                async genPDF() {
+                    if(!state.unifiedResult)return UI.showToast('Primero procesa una evaluación.','error');
+                    const res=state.unifiedResult;
+                    if(!res.input?.fields)return UI.showToast('El informe histórico carece de entradas completas. Reevalúa para generar un informe nuevo.','error');
+                    if(!await AuthGate.ensureSession())return;
+                    try{
+                        const doc=new jsPDF({format:'a4',unit:'mm'});
+                        // El logo se utiliza cuando el navegador permite leerlo sin violar CORS.
+                        let logoData=null;
+                        try{
+                            const image=new Image();
+                            image.crossOrigin='anonymous';
+                            await new Promise((resolve,reject)=>{
+                                image.onload=resolve;image.onerror=reject;
+                                image.src='https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp';
+                                setTimeout(()=>reject(new Error('Logo no accesible')),2500);
+                            });
+                            const canvas=document.createElement('canvas');
+                            canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+                            canvas.getContext('2d').drawImage(image,0,0);
+                            logoData=canvas.toDataURL('image/webp');
+                        }catch{logoData=null;}
+                        const details=ControlBandingReport.render(doc,res,{logoData});
+                        doc.save('Control_Banding_'+String(res.id||'evaluacion').replace(/[^A-Za-z0-9_-]/g,'')+'.pdf');
+                        const key='sst_verified_'+AuthGate.userId();
+                        let verified={};
+                        try{verified=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
+                        verified[res.id]=new Date().toISOString();
+                        localStorage.setItem(key,JSON.stringify(verified));
+                        UI.showToast('Informe generado con '+details.pages+' página(s), entradas, fuentes y plan.','success');
+                    }catch(err){console.error(err);UI.showToast('No se pudo generar el PDF: '+(err.message||'error desconocido'),'error');}
                 }
             };
 
