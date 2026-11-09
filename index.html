@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SST | Herramienta Avanzada de Control Banding</title>
     
+    <link rel="stylesheet" href="theme-2026.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="methodology.js" defer></script>
+    <script src="auth-gate.js" defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -147,7 +151,23 @@
     </style>
 <script defer src="https://www.movidasst.com/analytics.js?v=20261025-ga4com2"></script>
 </head>
-<body class="tech-grid relative min-h-screen flex flex-col">
+<body class="tech-grid relative min-h-screen flex flex-col auth-pending">
+    <section id="member-gate" aria-labelledby="gate-heading">
+        <div class="gate-card">
+            <img class="gate-logo" src="https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp" alt="La Movida de SST+">
+            <h1 id="gate-heading">Control Banding</h1>
+            <p class="gate-lede">Ingresa con las mismas credenciales de integrante de La Movida de SST+. No necesitas una nueva cuenta.</p>
+            <form id="member-login-form" autocomplete="on">
+                <label for="member-documento">Cédula o documento de identidad</label>
+                <input id="member-documento" name="documento" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="32" autocomplete="username" placeholder="Solo números" required>
+                <label for="member-code">Código de integrante</label>
+                <input id="member-code" name="codigo" type="password" minlength="4" maxlength="24" autocomplete="current-password" placeholder="Tu código de La Movida" required>
+                <p id="gate-error" class="gate-error" role="alert" hidden></p>
+                <button class="gate-button" type="submit"><span id="gate-submit-label">Ingresar a Control Banding</span></button>
+            </form>
+            <p class="gate-foot">¿Aún no eres integrante? <a href="https://registro.movidasst.com/" target="_blank" rel="noopener noreferrer">Regístrate gratuitamente</a><br><a href="https://www.movidasst.com/">Volver a La Movida</a></p>
+        </div>
+    </section>
 
     <!-- Luces Ambientales (Glow Background) -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
@@ -167,9 +187,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center gap-4">
-                    <img src="https://assets.poap.xyz/cec12a20-fefb-4199-9cc0-b1ece87fe44d.png" alt="Logo La Movida de SST" class="w-14 h-14 object-contain animate-float">
+                    <a class="m-brand-bar" href="https://www.movidasst.com/" aria-label="Volver a La Movida de SST+"><img src="https://www.movidasst.com/logo-horizontal-movida-sst-plus.webp" alt="La Movida de SST+" class="m-logo"></a>
                     <div>
-                        <h1 class="font-extrabold text-2xl text-brand-dark leading-tight tracking-tight">La Movida de SST</h1>
+                        <h1 class="m-title">Control Banding</h1>
                         <p class="text-sm text-brand-teal font-medium tracking-wide">De la Reacción a la prevención</p>
                         <div class="md:hidden mt-1 inline-block bg-brand-teal/10 text-brand-dark text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-brand-teal/20">
                             Control Banding
@@ -185,6 +205,7 @@
                         <i data-lucide="book-open" class="w-4 h-4"></i> Guía de Uso
                     </button>
                 </div>
+                <div class="m-userbar"><span id="member-name" aria-label="Integrante autenticado"></span><button id="member-logout" class="m-logout" type="button">Cerrar sesión</button></div>
             </div>
         </div>
     </header>
@@ -232,10 +253,11 @@
                 <div class="mb-8 flex justify-between items-end">
                     <div>
                         <h2 class="text-3xl font-extrabold text-brand-dark">Evaluación Integral de Riesgos</h2>
-                        <p class="text-slate-500 mt-2 font-medium">Análisis simultáneo de peligrosidad Inhalatoria (COSHH) y Dérmica (RISKOFDERM).</p>
+                        <p class="text-slate-500 mt-2 font-medium">Cribado inhalatorio basado en COSHH Essentials y estimación dérmica orientativa. Los resultados requieren revisión profesional.</p>
                     </div>
                 </div>
                 
+                <div class="m-soft-note">Evaluación cualitativa orientativa basada en las tablas de <strong>COSHH Essentials (HSE)</strong> para sólidos y líquidos. No sustituye la ficha de datos de seguridad (FDS), la evaluación higiénica ni el criterio profesional. <a href="https://www.hse.gov.uk/pubns/guidance/coshh-technical-basis.pdf" target="_blank" rel="noopener noreferrer">Consultar fundamento técnico del HSE</a>.</div>
                 <!-- Wizard Progress -->
                 <div class="mb-10 relative">
                     <div class="overflow-hidden h-3 mb-4 text-xs flex rounded-full bg-slate-200/50">
@@ -349,7 +371,7 @@
                         <div id="mode-mezcla" class="hidden space-y-6 animate-slideUp">
                             <div class="glass-card !border-brand-dark/30 p-5 rounded-2xl flex gap-4 text-brand-dark text-sm items-start">
                                 <i data-lucide="settings" class="w-6 h-6 flex-shrink-0 text-brand-dark mt-0.5"></i>
-                                <p class="font-medium leading-relaxed">Agregue los componentes peligrosos indicados en la Sección 3 de la FDS y su concentración. El sistema deducirá la banda inhalatoria y la severidad dérmica basándose en los umbrales GHS.</p>
+                                <p class="font-medium leading-relaxed">Agregue componentes de la sección 3 de la FDS con su concentración y frases H verificadas. La herramienta realiza un cribado orientativo según criterios COSHH del HSE; <strong>no clasifica legalmente la mezcla según el SGA</strong> ni reemplaza la clasificación de la FDS del producto final.</p>
                             </div>
                             
                             <div>
@@ -418,7 +440,7 @@
                                     <select id="estado_fisico" name="estado_fisico" class="input-field">
                                         <option value="solido">Sólido / Polvo</option>
                                         <option value="liquido" selected>Líquido</option>
-                                        <option value="gas">Gas</option>
+                                        <option value="gas" disabled>Gas (fuera del alcance COSHH Essentials)</option>
                                     </select>
                                 </div>
                                 <div id="propiedad_solido" class="hidden">
@@ -867,7 +889,7 @@
                     
                     <div class="bg-brand-yellow/10 border-l-4 border-brand-yellow p-4 rounded-r-xl mt-6">
                         <p class="font-bold text-brand-dark m-0">Sobre las Mezclas:</p>
-                        <p class="text-sm mt-1 mb-0">La calculadora utiliza las lógicas de corte del SGA. Por ejemplo, si un componente es corrosivo (H314) y está en la mezcla a >5%, la mezcla asume el nivel Muy Alto dérmico.</p>
+                        <p class="text-sm mt-1 mb-0">Las mezclas se examinan mediante criterios de selección de bandas COSHH; no son una clasificación oficial SGA. Consulte la FDS del producto final y valide las características de cada componente.</p>
                     </div>
                 </div>
             </div>
@@ -895,11 +917,11 @@
                     <h2 class="text-3xl font-extrabold">Fundamentos Científicos</h2>
                     <p class="text-lg font-medium text-slate-600">Este SaaS cruza las metodologías cualitativas más robustas para pymes.</p>
                     
-                    <h3 class="text-2xl font-bold mt-8">Inhalatorio: COSHH Essentials (UK) Modificado</h3>
-                    <p>Agrupa el riesgo tóxico en 5 bandas (A-E) vía Frases H. Modula la exposición cruzando propiedades termodinámicas (Punto de Ebullición) o mecánicas (Polvo) frente a la escala de la operación (g, Kg, Ton). Hemos agregado modificadores energéticos y de volumen de recinto para mayor exactitud conservadora.</p>
+                    <h3 class="text-2xl font-bold mt-8">Inhalatorio: COSHH Essentials (HSE)</h3>
+                    <p>Agrupa las frases H para la salud en bandas A–E y aplica las tablas de potencial de exposición (cantidad y volatilidad o pulverulencia), con niveles de control de la tabla técnica del HSE. No se aplica a gases. Los datos del proceso y del entorno se conservan para contextualizar la evaluación, pero no modifican arbitrariamente la banda COSHH.</p>
 
-                    <h3 class="text-2xl font-bold mt-8">Dérmico: RISKOFDERM (UE)</h3>
-                    <p>Transforma frases H cutáneas específicas (H314, H317, H350) en un <i>Hazard Score</i> intrínseco (Bajo a Extremo). Lo cruza con unidades de Operación de Exposición Dérmica (DEO) empíricamente estudiadas para arrojar una criticidad del 1 al 10.</p>
+                    <h3 class="text-2xl font-bold mt-8">Dérmico: estimación orientativa de prioridad</h3>
+                    <p>Cruza peligros cutáneos de la FDS y tipos de tarea para ofrecer una prioridad cualitativa de 1 a 10. Esta simplificación no es una implementación validada de RISKOFDERM y no certifica exposición segura ni aceptación del riesgo.</p>
                 </div>
             </div>
             
@@ -1832,7 +1854,7 @@
             };
         })();
 
-        document.addEventListener('DOMContentLoaded', App.init);
+        document.addEventListener('DOMContentLoaded', AuthGate.boot);
     </script>
 </body>
 </html>
