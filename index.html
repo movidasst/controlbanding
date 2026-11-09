@@ -1013,7 +1013,7 @@
                 currentStep: 1,
                 wizardTotalSteps: 5,
                 apiCache: {},
-                unifiedResult: null, mixResult: null // La mezcla exige validación antes de continuar
+                unifiedResult: null, mixResult: null, editingId: null, restoring:false // Resultado y edición separados
             };
 
             function escapeHTML(value) {
@@ -1110,15 +1110,64 @@
             const HistoryManager = {
                 get key() { return 'sst_evaluations_history_' + AuthGate.userId(); },
                 save(evaluation) {
-                    const hist = this.getAll();
-                    evaluation.id = `EV-${Date.now()}`;
-                    evaluation.timestamp = new Date().toISOString();
+                    if(!AuthGate.isReady())return UI.showToast('Debes iniciar sesión para guardar.','error');
+                    const hist=this.getAll();
+                    const now=new Date().toISOString();
+                    if(!evaluation.id) evaluation.id='EV-'+crypto.randomUUID();
+                    const found=hist.findIndex(e=>e.id===evaluation.id);
+                    evaluation.timestamp=found>=0?hist[found].timestamp:now;
+                    evaluation.updatedAt=now;
+                    if(found>=0)hist.splice(found,1);
                     hist.unshift(evaluation);
-                    localStorage.setItem(this.key, JSON.stringify(hist));
+                    try {localStorage.setItem(this.key,JSON.stringify(hist));}
+                    catch {return UI.showToast('No se pudo guardar: almacenamiento del navegador lleno o deshabilitado. Exporta tu historial.','error');}
+                    state.editingId=null;
                     this.renderList();
-                    UI.showToast("Evaluación guardada en Historial", "success");
+                    UI.showToast(found>=0?'Evaluación actualizada y guardada.':'Evaluación guardada en este navegador.','success');
                 },
-                getAll() { try { const items=JSON.parse(localStorage.getItem(this.key)); return Array.isArray(items)?items:[]; } catch { return []; } },
+                getAll() {
+                    try {const items=JSON.parse(localStorage.getItem(this.key));return Array.isArray(items)?items:[];}
+                    catch {return [];}
+                },
+                exportAll() {
+                    if(!AuthGate.isReady())return;
+                    const records=this.getAll();
+                    const data=ControlBandingEvidence.envelope(AuthGate.userId(),records);
+                    ControlBandingEvidence.downloadText(JSON.stringify(data,null,2),ControlBandingEvidence.filenameBase()+'-historial.json');
+                    UI.showToast('Historial exportado. Guarda el archivo en un lugar protegido.','success');
+                },
+                async importJSON(file) {
+                    if(!file)return;
+                    if(!AuthGate.isReady())return UI.showToast('Sesión no validada.','error');
+                    try{
+                        if(file.size>2_000_000)throw new Error('El archivo supera 2 MB.');
+                        const data=ControlBandingEvidence.parseEnvelope(await file.text(),AuthGate.userId());
+                        const current=this.getAll();
+                        const ids=new Set(current.map(e=>e.id));
+                        const newOnes=data.filter(e=>!ids.has(e.id));
+                        if(!newOnes.length)return UI.showToast('No hay registros nuevos para importar.','info');
+                        if(!window.confirm('Se importarán '+newOnes.length+' evaluaciones a este navegador. ¿Confirmas que el archivo es de tu propiedad?'))return;
+                        localStorage.setItem(this.key,JSON.stringify([...current,...newOnes]));
+                        this.renderList();
+                        UI.showToast(newOnes.length+' evaluaciones importadas.','success');
+                    }catch(e){UI.showToast(e.message||'No se pudo importar el archivo.','error');}
+                },
+                loadToEdit(id) {
+                    const found=this.getAll().find(e=>e.id===id);
+                    if(!found)return UI.showToast('Evaluación no encontrada.','error');
+                    if(!found.input?.fields)return UI.showToast('Registro histórico sin entradas recuperables: conserva el informe y crea una evaluación nueva.','error');
+                    if(!window.confirm('¿Abrir esta evaluación para editar? Se conservará el registro original hasta que recalcules y pulses Guardar.'))return;
+                    try{
+                        state.restoring=true;
+                        ControlBandingEvidence.restore(document.getElementById('unifiedBandingForm'),found.input,Handlers.addMixtureComponent);
+                        state.editingId=id;state.unifiedResult=null;state.mixResult=null;
+                        document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
+                        UI.changeTab('evaluacion_unificada');
+                        UI.showStep(1);
+                        UI.showToast('Entradas restauradas. Recalcula la mezcla, si corresponde, y después la evaluación.','info');
+                    }catch(e){UI.showToast('No se pudo abrir la evaluación: '+e.message,'error');}
+                    finally{state.restoring=false;Storage.save();}
+                },
                 importLegacy() {
                     let old=[];
                     try {old=JSON.parse(localStorage.getItem('sst_evaluations_history')||'[]');}catch{}
@@ -1181,8 +1230,9 @@
                                 <span class="bg-slate-100 text-brand-dark px-2 py-1 rounded font-black text-xs">Score ${escapeHTML(d.dermico.riskScore)}/10</span>
                             </td>
                             <td class="px-6 py-4 text-center opacity-100 flex justify-center gap-2">
-                                <button type="button" data-hist-action="load" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" title="Cargar"><i data-lucide="eye" class="w-5 h-5"></i></button>
-                                <button type="button" data-hist-action="delete" data-id="${escapeHTML(d.id)}" class="text-red-600 hover:text-red-800" title="Eliminar"><i data-lucide="trash" class="w-5 h-5"></i></button>
+                                <button type="button" data-hist-action="load" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" aria-label="Ver evaluación ${escapeHTML(d.inhalatorio.name)}"><i data-lucide="eye" class="w-5 h-5" aria-hidden="true"></i></button>
+                                <button type="button" data-hist-action="edit" data-id="${escapeHTML(d.id)}" class="text-brand-teal hover:text-brand-dark" aria-label="Editar entradas de ${escapeHTML(d.inhalatorio.name)}" ${d.input?.fields?'':'disabled title="Registro sin entradas editables"'}><i data-lucide="pencil" class="w-5 h-5" aria-hidden="true"></i></button>
+                                <button type="button" data-hist-action="delete" data-id="${escapeHTML(d.id)}" class="text-red-600 hover:text-red-800" aria-label="Eliminar evaluación de ${escapeHTML(d.inhalatorio.name)}"><i data-lucide="trash" class="w-5 h-5"></i></button>
                             </td>
                         </tr>
                     `).join('');
@@ -1192,39 +1242,33 @@
 
             // --- PERSISTENCIA (DRAFT) --- 
             const Storage = {
-                save() {
-                    const form = document.getElementById('unifiedBandingForm');
-                    if (!form) return;
-                    const fd = new FormData(form);
-                    const data = Object.fromEntries(fd.entries());
-                    const is_cmr = document.getElementById('is_cmr');
-                    const is_nano = document.getElementById('is_nano');
-                    if (is_cmr) data.is_cmr = is_cmr.checked;
-                    if (is_nano) data.is_nano = is_nano.checked;
-                    localStorage.setItem('sst_draft_' + AuthGate.userId(), JSON.stringify(data));
+                get key(){return 'sst_draft_'+AuthGate.userId();},
+                save(){
+                    if(state.restoring||!AuthGate.isReady())return;
+                    try{
+                        const form=document.getElementById('unifiedBandingForm');if(!form)return;
+                        const snapshot=ControlBandingEvidence.capture(form);
+                        localStorage.setItem(this.key,JSON.stringify({schema:3,snapshot,step:state.currentStep,savedAt:new Date().toISOString()}));
+                        const status=document.getElementById('draft-status');
+                        if(status)status.textContent='Borrador local guardado · '+new Date().toLocaleTimeString();
+                    }catch{const status=document.getElementById('draft-status');if(status)status.textContent='No se pudo guardar el borrador en este dispositivo.';}
                 },
-                load() {
-                    const data = JSON.parse(localStorage.getItem('sst_draft_' + AuthGate.userId()));
-                    if(!data) return;
-                    Object.keys(data).forEach(k => {
-                         if(k==='product_type'){
-                             const radio=[...document.querySelectorAll('input[name="product_type"]')].find(r=>r.value===data[k]);
-                             if(radio)radio.checked=true;
-                             return;
-                         }
-                        const el = document.getElementsByName(k)[0];
-                        if(el) {
-                            if(el.type === 'checkbox') el.checked = data[k];
-                            else el.value = data[k];
-                        }
-                    });
-                    const estadoFisico = document.getElementById('estado_fisico');
-                    if (estadoFisico) estadoFisico.dispatchEvent(new Event('change'));
-                     document.querySelector('input[name="product_type"]:checked')?.dispatchEvent(new Event('change'));
+                load(){
+                    try{
+                        const raw=localStorage.getItem(this.key);if(!raw)return UI.showToast('No hay borrador para recuperar.','error');
+                        const data=JSON.parse(raw);
+                        const snapshot=data?.schema===3?data.snapshot:data;
+                        state.restoring=true;
+                        ControlBandingEvidence.restore(document.getElementById('unifiedBandingForm'),snapshot,Handlers.addMixtureComponent);
+                        state.mixResult=null;state.unifiedResult=null;state.editingId=null;
+                        document.getElementById('resultadoEvaluacion')?.classList.add('hidden');
+                        state.restoring=false;
+                        UI.showStep(Math.max(1,Math.min(5,Number(data?.step)||1)));
+                        UI.showToast('Borrador y componentes restaurados. Recalcula la mezcla antes de avanzar.','success');
+                    }catch(e){UI.showToast('No se pudo recuperar el borrador: '+e.message,'error');}
+                    finally{state.restoring=false;}
                 },
-                clear() {
-                    localStorage.removeItem('sst_draft_' + AuthGate.userId());
-                }
+                clear(){localStorage.removeItem(this.key);const st=document.getElementById('draft-status');if(st)st.textContent='Borrador eliminado de este navegador.';}
             };
 
             // --- INTERFAZ UI ---
