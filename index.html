@@ -1364,89 +1364,60 @@
 
             const Handlers = {
                 addMixtureComponent() {
-                    const c = document.getElementById('mixture-components');
-                    if(!c) return;
-                    const d = document.createElement('div');
-                    d.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200';
-                    d.innerHTML = `
-                        <input type="text" class="input-field mix-cas !py-1.5 !text-sm flex-[2]" placeholder="CAS">
-                        <input type="number" class="input-field mix-conc !py-1.5 !text-sm flex-1" placeholder="%" min="0" max="100">
-                        <button type="button" class="text-slate-400 hover:text-red-500 p-1" onclick="this.parentElement.remove()"><i data-lucide="x" class="w-4 h-4"></i></button>
-                    `;
-                    c.appendChild(d);
-                    lucide.createIcons();
-
-                    const casInput = d.querySelector('.mix-cas');
-                    casInput.addEventListener('blur', async (e) => {
-                        const cas = e.target.value.trim();
-                        if(cas) {
-                            const data = await ApiService.getChemicalData(cas);
-                            if(data) {
-                                d.dataset.h = data.hPhrases ? data.hPhrases.join(',') : '';
-                                UI.showToast(`Identificado: ${data.name}`, 'success');
-                            } else {
-                                UI.showToast(`CAS no encontrado en BD.`, 'error');
-                            }
-                        }
+                    const c=document.getElementById('mixture-components');
+                    if(!c)return;
+                    const row=document.createElement('div');
+                    row.className='bg-slate-50 p-3 rounded-xl border border-slate-200';
+                    row.innerHTML=`
+                        <input type="text" class="input-field mix-cas !py-2 !text-sm" placeholder="CAS (opcional)" aria-label="CAS del componente">
+                        <input type="text" class="input-field mix-h !py-2 !text-sm" placeholder="Frases H: H315, H335" aria-label="Frases H de la FDS">
+                        <input type="number" class="input-field mix-conc !py-2 !text-sm" min="0.001" max="100" step="any" placeholder="Concentración %" aria-label="Concentración porcentual">
+                        <button type="button" class="mix-delete text-red-600 font-bold p-2" aria-label="Eliminar componente">✕</button>`;
+                    const invalidate=()=>{
+                        state.mixResult=null;
+                        document.getElementById('mix_banda_inh').value='';
+                        document.getElementById('mix_score_der').value='';
+                        document.getElementById('mixture-result').classList.add('hidden');
+                    };
+                    row.addEventListener('input',invalidate);
+                    row.querySelector('.mix-delete').addEventListener('click',()=>{row.remove();invalidate();});
+                    row.querySelector('.mix-cas').addEventListener('blur',async e=>{
+                        const cas=e.target.value.trim();if(!cas)return;
+                        const chemical=await ApiService.getChemicalData(cas);
+                        if(chemical?.hPhrases?.length){
+                            row.querySelector('.mix-h').value=chemical.hPhrases.join(', ');
+                            invalidate();
+                            UI.showToast('PubChem sugiere frases H. Confirme con la FDS.','info');
+                        }else UI.showToast('CAS sin frases H verificables. Ingrese los datos de la FDS.','error');
                     });
+                    c.appendChild(row);invalidate();
                 },
                 async calcMixture() {
-                    const rows = document.querySelectorAll('#mixture-components > div');
-                    if(rows.length===0) return UI.showToast("Añada componentes", "error");
-                    
-                    const btn = document.getElementById('calculate-mixture-btn');
-                    if(btn) btn.innerHTML = `<span class="loader border-t-white w-4 h-4 mr-2"></span> Calculando...`;
-                    
-                    let inhBands = [];
-                    let derScores = [];
-                    
-                    for(let r of rows) {
-                        const casInput = r.querySelector('.mix-cas');
-                        const concInput = r.querySelector('.mix-conc');
-                        const cas = casInput ? casInput.value : '';
-                        const conc = concInput ? parseFloat(concInput.value) : NaN;
-                        const h = r.dataset.h || "";
-                        
-                        if(cas && !isNaN(conc)) {
-                            const phArr = h.toUpperCase().split(',');
-                            
-                            // Inh
-                            const b = Calculator.getHighestBand(phArr);
-                            inhBands.push({band: b, conc});
-                            
-                            // Der
-                            const ds = Calculator.getDermalHazardScore(phArr);
-                            if((ds===5 && conc >=0.1) || (ds<5 && conc>=1)) {
-                                derScores.push(ds);
-                            }
-                        }
-                    }
-
-                    // Eval Inhalatoria Mezcla
-                    let finalB = 'A';
-                    for(let b of ['E','D','C','B']) {
-                        const t = {'E':0.1, 'D':1, 'C':10, 'B':20}[b];
-                        if(inhBands.some(x => x.band===b && x.conc >= t)) { finalB = b; break; }
-                    }
-
-                    // Eval Dérmica Mezcla
-                    const finalD = derScores.length > 0 ? Math.max(...derScores) : 1;
-
-                    const resInh = document.getElementById('mix-res-inh');
-                    const resDer = document.getElementById('mix-res-der');
-                    const resBox = document.getElementById('mixture-result');
-
-                    if(resInh) resInh.textContent = finalB;
-                    if(resDer) resDer.textContent = ['Nulo','Bajo','Moderado','Alto','Muy Alto','Extremo'][finalD];
-                    if(resBox) resBox.classList.remove('hidden');
-                    
-                    const casField = document.getElementById('cas_number');
-                    const hField = document.getElementById('h_phrases');
-                    if(casField) casField.value = 'Mezcla Evaluada';
-                    if(hField) hField.value = `Asignado por calculadora (Banda ${finalB})`;
-                    
-                    if(btn) btn.innerHTML = "Calcular Clasificación Global";
-                    UI.showToast("Peligro de mezcla asignado al formulario principal.", "success");
+                    const btn=document.getElementById('calculate-mixture-btn');
+                    if(btn)btn.disabled=true;
+                    try{
+                        const items=[...document.querySelectorAll('#mixture-components > div')].map(row=>({
+                            phrases:row.querySelector('.mix-h')?.value||'',
+                            concentration:row.querySelector('.mix-conc')?.value||''
+                        }));
+                        const result=ControlBandingMethod.mixture(items);
+                        state.mixResult=result;
+                        document.getElementById('mix_banda_inh').value=result.band;
+                        document.getElementById('mix_score_der').value=String(result.dermal);
+                        document.getElementById('mix-res-inh').textContent=result.band;
+                        document.getElementById('mix-res-der').textContent=['Nulo','Bajo','Moderado','Alto','Muy Alto','Extremo'][result.dermal];
+                        const box=document.getElementById('mixture-result');box.classList.remove('hidden');
+                        let note=document.getElementById('methodology-note');
+                        if(!note){note=document.createElement('p');note.id='methodology-note';note.className='m-soft-note m-amber-note';box.insertAdjacentElement('afterend',note);}
+                        note.textContent=result.notice+(result.requiresExpert?' H334: confirme umbrales y solicite revisión especializada.':'');
+                        UI.showToast('Cribado de mezcla calculado. Verifique la FDS.','success');
+                    }catch(err){
+                        state.mixResult=null;
+                        document.getElementById('mix_banda_inh').value='';
+                        document.getElementById('mix_score_der').value='';
+                        document.getElementById('mixture-result').classList.add('hidden');
+                        UI.showToast(err.message||'Composición incompleta o inválida.','error');
+                    }finally{if(btn)btn.disabled=false;}
                 },
 
                 async submitUnified(e) {
@@ -1458,24 +1429,27 @@
                     }
 
                     try {
+                        if(!await AuthGate.ensureSession())throw new Error('La sesión venció; ingresa nuevamente.');
                         const form = document.getElementById('unifiedBandingForm');
                         const fd = new FormData(form);
                         const data = Object.fromEntries(fd.entries());
                         const isPura = data.product_type === 'pura';
                         
                         let name = isPura ? data.chemical_name_pura : data.chemical_name_mezcla;
-                        let bandInh = 'A';
-                        let scoreDer = 1;
+                        let bandInh;
+                         let scoreDer;
 
-                        if(isPura) {
-                            const phArr = data.h_phrases ? data.h_phrases.toUpperCase().split(',').map(s=>s.trim()) : [];
+                        if(!String(name||'').trim())throw new Error('Debe indicar el nombre de la sustancia o mezcla.');
+                         if(isPura) {
+                             const phArr = ControlBandingMethod.codes(data.h_phrases,true);
                             bandInh = Calculator.getHighestBand(phArr);
                             const is_cmr = document.getElementById('is_cmr')?.checked;
                             if(is_cmr) bandInh = 'E';
                             scoreDer = Calculator.getDermalHazardScore(phArr);
                         } else {
-                            bandInh = document.getElementById('mix_banda_inh')?.value || 'A';
-                            scoreDer = parseInt(document.getElementById('mix_score_der')?.value || 1);
+                            if(!state.mixResult) throw new Error('La mezcla no está calculada o fue modificada. Vuelva a calcular.');
+                             bandInh = state.mixResult.band;
+                             scoreDer = state.mixResult.dermal;
                         }
 
                         // Mods
@@ -1489,13 +1463,13 @@
                         // Calc
                         const is_cmr = document.getElementById('is_cmr')?.checked;
                         const expInh = Calculator.getExposureBand(data.estado_fisico, propInh, parseInt(data.tipo_proceso), parseFloat(data.duracion), data.cantidad_utilizada, mods);
-                        const cReq = Calculator.getControlLevel(bandInh, expInh, data.estado_fisico, is_cmr);
+                        const cReq = Calculator.getControlLevel(bandInh, expInh, data.estado_fisico, is_cmr, data.cantidad_utilizada, propInh);
                         
                         const expDer = Calculator.getDermalExposureScore(data.dermal_task);
                         const rDer = Calculator.getDermalRiskScore(scoreDer, expDer);
 
                         state.unifiedResult = {
-                            context: { company: data.companyName, process: data.process, date: data.evalDate, existControl: parseInt(data.controles_existentes), estado: data.estado_fisico },
+                            context: { company: data.companyName, process: data.process, date: data.evalDate, existControl: parseInt(data.controles_existentes), estado: data.estado_fisico, cantidad:data.cantidad_utilizada, propiedad:propInh, metodo:'COSHH HSE 2019', estimacionDer:'orientativa' },
                             inhalatorio: { name: name||'Sin Nombre', band: bandInh, exp: expInh, controlReq: cReq },
                             dermico: { hazardLvl: scoreDer, expLvl: expDer, riskScore: rDer }
                         };
@@ -1509,7 +1483,7 @@
 
                     } catch (err) { 
                         console.error(err); 
-                        UI.showToast("Error procesando los datos", "error"); 
+                        UI.showToast(err?.message || "No se pudo procesar la evaluación", "error"); 
                     } finally { 
                         if(btn) {
                             btn.disabled=false; 
