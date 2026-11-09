@@ -1777,6 +1777,8 @@
             };
         })();
 
+        // AuthGate se ejecuta desde un script independiente y necesita esta referencia.
+        window.App = App;
         document.addEventListener('DOMContentLoaded', AuthGate.boot);
     </script>
 </body>
